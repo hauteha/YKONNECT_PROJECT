@@ -148,7 +148,7 @@ resource "docker_container" "prometheus" {
   }
 
   volumes {
-    host_path      = "/opt/monitoring/prometheus.yml"
+    host_path      = "/home/hau/infra-deployment/monitoring/prometheus.yml"
     container_path = "/etc/prometheus/prometheus.yml"
     read_only      = true
   }
@@ -201,7 +201,7 @@ resource "docker_container" "grafana" {
     container_path = "/var/lib/grafana"
   }
   volumes {
-    host_path      = "/opt/monitoring/grafana/provisioning"
+    host_path      = "/home/hau/infra-deployment/grafana/provisioning"
     container_path = "/etc/grafana/provisioning"
     read_only      = true
   }
@@ -227,12 +227,12 @@ resource "docker_container" "nginx" {
   }
 
   volumes {
-    host_path      = "/opt/website/html"
+    host_path      = "/home/hau/infra-deployment/website/html"
     container_path = "/usr/share/nginx/html"
     read_only      = true
   }
   volumes {
-    host_path      = "/opt/website/nginx.conf"
+    host_path      = "/home/hau/infra-deployment/website/nginx.conf"
     container_path = "/etc/nginx/nginx.conf"
     read_only      = true
   }
