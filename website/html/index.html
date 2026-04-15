@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mon App On-Prem</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      text-align: center;
+      padding: 3rem 4rem;
+      background: #1e293b;
+      border-radius: 1rem;
+      border: 1px solid #334155;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; color: #38bdf8; }
+    p  { color: #94a3b8; margin-bottom: 2rem; }
+    .links a {
+      display: inline-block;
+      margin: 0.5rem;
+      padding: 0.6rem 1.4rem;
+      background: #0ea5e9;
+      color: white;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .links a:hover { background: #38bdf8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 Infrastructure On-Prem</h1>
+    <p>Déployé via Terraform · Docker · 192.168.4.80</p>
+    <div class="links">
+      <a href="http://192.168.4.80:3001" target="_blank">📊 Grafana</a>
+      <a href="http://192.168.4.80:9090" target="_blank">🔥 Prometheus</a>
+      <a href="http://192.168.4.80:9000" target="_blank">🐳 Portainer</a>
+    </div>
+  </div>
+</body>
+</html>

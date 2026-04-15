@@ -1,0 +1,40 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'on-prem'
+    server: '192.168.4.80'
+
+# ── Règles d'alerting (optionnel, à compléter) ──────────────
+# rule_files:
+#   - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+
+  # Prometheus se scrape lui-même
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Métriques système du serveur hôte
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: '192.168.4.80'
+
+  # Métriques PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres@appdb'
+
+  # Métriques Nginx (via nginx-prometheus-exporter si ajouté plus tard)
+  # - job_name: 'nginx'
+  #   static_configs:
+  #     - targets: ['nginx_exporter:9113']

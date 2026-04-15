@@ -1,0 +1,22 @@
+# Secrets — NE JAMAIS commiter
+terraform.tfvars
+*.tfvars
+!example.tfvars
+
+# State Terraform
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Répertoire de travail Terraform
+.terraform/
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
