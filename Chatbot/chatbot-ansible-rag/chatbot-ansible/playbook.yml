@@ -1,0 +1,10 @@
+---
+- name: "Déploiement complet du Chatbot RAG"
+  hosts: chatbot_server
+  vars_files:
+    - vars.yml
+  roles:
+    - docker      # Installe Docker + Docker Compose
+    - fastapi     # Déploie l'app, ChromaDB, Ollama via Docker Compose
+    - chromadb    # Vérifie que ChromaDB est prêt
+    - ollama      # Télécharge les modèles LLM + embedding

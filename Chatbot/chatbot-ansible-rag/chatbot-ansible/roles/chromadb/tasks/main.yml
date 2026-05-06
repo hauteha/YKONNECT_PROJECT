@@ -1,0 +1,15 @@
+---
+# Ce rôle vérifie que ChromaDB est bien démarré et accessible
+
+- name: Attendre que ChromaDB soit disponible
+  uri:
+    url: "http://localhost:8001/api/v1/heartbeat"
+    method: GET
+  register: chroma_health
+  retries: 15
+  delay: 5
+  until: chroma_health.status == 200
+
+- name: ChromaDB est prêt
+  debug:
+    msg: "ChromaDB opérationnel !"

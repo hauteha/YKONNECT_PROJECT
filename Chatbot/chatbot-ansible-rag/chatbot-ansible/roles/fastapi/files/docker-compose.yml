@@ -1,0 +1,44 @@
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    restart: unless-stopped
+    volumes:
+      - chroma_data:/chroma/chroma
+    ports:
+      - "8001:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+
+  fastapi:
+    build: .
+    container_name: chatbot_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docs:/app/docs        # ← Vos fichiers Markdown FAQ ici
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+      - EMBED_MODEL=nomic-embed-text
+      - CHROMA_URL=http://chromadb:8000
+      - SYSTEM_PROMPT=Tu es un assistant virtuel serviable. Réponds uniquement en français. Utilise uniquement le contexte fourni pour répondre. Si la réponse n'est pas dans le contexte, dis-le honnêtement.
+    depends_on:
+      - ollama
+      - chromadb
+
+volumes:
+  ollama_data:
+  chroma_data:

@@ -1,0 +1,35 @@
+---
+- name: Attendre qu'Ollama soit disponible
+  uri:
+    url: "http://localhost:{{ ollama_port }}/api/tags"
+    method: GET
+  register: result
+  retries: 15
+  delay: 5
+  until: result.status == 200
+
+- name: Télécharger le modèle LLM {{ ollama_model }}
+  uri:
+    url: "http://localhost:{{ ollama_port }}/api/pull"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ ollama_model }}"
+      stream: false
+    timeout: 600
+  register: pull_llm
+
+- name: Télécharger le modèle d'embedding nomic-embed-text
+  uri:
+    url: "http://localhost:{{ ollama_port }}/api/pull"
+    method: POST
+    body_format: json
+    body:
+      name: "nomic-embed-text"
+      stream: false
+    timeout: 600
+  register: pull_embed
+
+- name: Modèles prêts
+  debug:
+    msg: "✅ LLM '{{ ollama_model }}' + modèle embedding 'nomic-embed-text' installés !"

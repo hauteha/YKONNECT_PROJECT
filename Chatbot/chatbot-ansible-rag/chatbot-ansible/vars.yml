@@ -1,0 +1,15 @@
+---
+# ─── Ollama ────────────────────────────────────────────
+ollama_model: "llama3.2:3b"
+ollama_port: 11434
+
+# ─── FastAPI ───────────────────────────────────────────
+fastapi_port: 8000
+app_dir: "/opt/chatbot"
+
+# ─── Chatbot ───────────────────────────────────────────
+site_title: "Mon Chatbot"
+chatbot_system_prompt: >
+  Tu es un assistant virtuel serviable et sympathique.
+  Réponds toujours en français, de manière concise et claire.
+  Si tu ne sais pas répondre, dis-le honnêtement.

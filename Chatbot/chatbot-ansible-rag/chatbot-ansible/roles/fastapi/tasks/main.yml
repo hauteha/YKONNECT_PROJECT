@@ -1,0 +1,62 @@
+---
+- name: Créer le répertoire de l'application
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Créer le dossier docs (vos fichiers FAQ)
+  file:
+    path: "{{ app_dir }}/docs"
+    state: directory
+
+- name: Créer le dossier static
+  file:
+    path: "{{ app_dir }}/static"
+    state: directory
+
+- name: Copier les fichiers de l'application
+  copy:
+    src: "{{ item }}"
+    dest: "{{ app_dir }}/"
+  loop:
+    - app.py
+    - ingest.py
+    - Dockerfile
+    - docker-compose.yml
+
+- name: Copier le widget HTML
+  copy:
+    src: index.html
+    dest: "{{ app_dir }}/static/index.html"
+
+- name: Copier l'exemple de FAQ (si dossier docs vide)
+  copy:
+    src: docs/faq.md
+    dest: "{{ app_dir }}/docs/faq.md"
+    force: no   # ne pas écraser si le fichier existe déjà
+
+- name: Build et lancer les containers via Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_dir }}"
+    state: present
+    build: always
+
+- name: Attendre que FastAPI soit prêt
+  uri:
+    url: "http://localhost:{{ fastapi_port }}/health"
+    method: GET
+  register: health
+  retries: 15
+  delay: 5
+  until: health.status == 200
+
+- name: Lancer l'indexation des documents FAQ
+  community.docker.docker_container_exec:
+    container: chatbot_api
+    command: python ingest.py
+  register: ingest_result
+
+- name: Résultat de l'indexation
+  debug:
+    msg: "{{ ingest_result.stdout }}"
