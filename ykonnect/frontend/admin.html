@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>Admin</span></div>
+    </div>
+    <div style="flex:1;"></div>
+    <div id="adminInfo" style="display:none; display:none; align-items:center; gap:10px;">
+      <span style="font-size:12px;color:#94a3b8;">Mode administrateur</span>
+      <button class="btn btn-ghost" id="btnAdminLogout" style="font-size:12px;">Déconnexion</button>
+    </div>
+  </header>
+
+  <!-- Login admin -->
+  <div id="adminLoginView" style="max-width:380px; margin:60px auto 0;">
+    <div class="card">
+      <h2 style="font-size:18px; font-weight:700; margin-bottom:4px;">Espace administrateur</h2>
+      <p class="text-soft" style="margin-bottom:20px;">Accès réservé à l'équipe YKonnect.</p>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label class="label">Email admin</label>
+        <input class="input" id="adminEmail" type="email" placeholder="admin@ykonnect.fr" />
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label class="label">Mot de passe</label>
+        <input class="input" id="adminPassword" type="password" placeholder="••••••••" />
+      </div>
+      <div id="adminLoginErr" style="color:#f87171;font-size:12px;margin-bottom:10px;display:none;"></div>
+      <button class="btn btn-primary" id="adminLoginBtn" style="width:100%;">Accéder →</button>
+    </div>
+  </div>
+
+  <!-- Dashboard admin -->
+  <div id="adminDashboard" style="display:none;">
+    <section class="page-header" style="margin-top:20px;">
+      <h1 class="page-header-title">⚙️ Gestion des tickets</h1>
+      <p class="page-header-subtitle">Tous les tickets soumis par les utilisateurs.</p>
+    </section>
+
+    <!-- Filtres -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0;">
+      <button class="btn btn-ghost filter-btn active-filter" data-filter="all">Tous</button>
+      <button class="btn btn-ghost filter-btn" data-filter="ouvert">🔵 Ouverts</button>
+      <button class="btn btn-ghost filter-btn" data-filter="en_cours">🟡 En cours</button>
+      <button class="btn btn-ghost filter-btn" data-filter="resolu">✅ Résolus</button>
+    </div>
+
+    <div id="adminTicketList"></div>
+    <p id="adminNoTickets" style="display:none;color:var(--text-soft);font-size:13px;padding:20px 0;">Aucun ticket.</p>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var adminToken = sessionStorage.getItem('yk_admin_token');
+  var currentFilter = 'all';
+  var allTickets = [];
+
+  var STATUS_LABELS = { ouvert: '🔵 Ouvert', en_cours: '🟡 En cours', resolu: '✅ Résolu' };
+  var STATUS_NEXT   = { ouvert: 'en_cours', en_cours: 'resolu', resolu: 'ouvert' };
+  var STATUS_NEXT_LABEL = { ouvert: '→ Passer en cours', en_cours: '→ Marquer résolu', resolu: '→ Réouvrir' };
+  var PRIORITY_COLORS = { basse: '#64748b', normale: '#06b6d4', urgente: '#f43f5e' };
+
+  if (adminToken) showDashboard();
+
+  /* ── Login ── */
+  document.getElementById('adminLoginBtn').addEventListener('click', function () {
+    var email = document.getElementById('adminEmail').value.trim();
+    var pass  = document.getElementById('adminPassword').value;
+    var errEl = document.getElementById('adminLoginErr');
+    errEl.style.display = 'none';
+    this.disabled = true;
+    var btn = this;
+
+    fetch('/api/auth/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    .then(function (res) {
+      if (!res.ok) { errEl.textContent = res.data.detail || 'Identifiants incorrects.'; errEl.style.display = 'block'; btn.disabled = false; return; }
+      adminToken = res.data.token;
+      sessionStorage.setItem('yk_admin_token', adminToken);
+      showDashboard();
+    })
+    .catch(function () { errEl.textContent = 'Impossible de joindre le serveur.'; errEl.style.display = 'block'; btn.disabled = false; });
+  });
+
+  ['adminEmail','adminPassword'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('adminLoginBtn').click();
+    });
+  });
+
+  document.getElementById('btnAdminLogout').addEventListener('click', function () {
+    sessionStorage.removeItem('yk_admin_token');
+    adminToken = null;
+    document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('adminLoginView').style.display = 'block';
+    document.getElementById('adminInfo').style.display = 'none';
+  });
+
+  /* ── Filtres ── */
+  document.querySelectorAll('.filter-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active-filter'); });
+      btn.classList.add('active-filter');
+      currentFilter = btn.getAttribute('data-filter');
+      renderTickets();
+    });
+  });
+
+  /* ── Dashboard ── */
+  function showDashboard() {
+    document.getElementById('adminLoginView').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    document.getElementById('adminInfo').style.display = 'flex';
+    loadTickets();
+  }
+
+  function loadTickets() {
+    fetch('/api/admin/tickets', {
+      headers: { 'Authorization': 'Bearer ' + adminToken, 'Content-Type': 'application/json' }
+    })
+    .then(function (r) {
+      if (r.status === 401 || r.status === 403) {
+        sessionStorage.removeItem('yk_admin_token');
+        location.reload(); return;
+      }
+      return r.json();
+    })
+    .then(function (tickets) {
+      if (!tickets) return;
+      allTickets = tickets;
+      renderTickets();
+    })
+    .catch(function () {
+      document.getElementById('adminTicketList').innerHTML = '<p style="color:#f87171;font-size:13px;">Erreur de chargement.</p>';
+    });
+  }
+
+  function renderTickets() {
+    var filtered = currentFilter === 'all' ? allTickets : allTickets.filter(function (t) { return t.status === currentFilter; });
+    var list = document.getElementById('adminTicketList');
+    var none = document.getElementById('adminNoTickets');
+    if (!filtered.length) { list.innerHTML = ''; none.style.display = ''; return; }
+    none.style.display = 'none';
+    list.innerHTML = filtered.map(renderRow).join('');
+    list.querySelectorAll('.status-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id     = parseInt(btn.getAttribute('data-id'));
+        var next   = btn.getAttribute('data-next');
+        btn.disabled = true;
+        fetch('/api/admin/tickets/' + id + '/status', {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + adminToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: next })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+          var t = allTickets.find(function (t) { return t.id === id; });
+          if (t) { t.status = res.status; t.updated_at = new Date().toISOString(); }
+          renderTickets();
+        })
+        .catch(function () { btn.disabled = false; });
+      });
+    });
+  }
+
+  function renderRow(t) {
+    var date = t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '';
+    var nextStatus = STATUS_NEXT[t.status];
+    var statusColors = {
+      ouvert:   { bg: 'rgba(168,85,247,.06)',  border: 'rgba(168,85,247,.2)'  },
+      en_cours: { bg: 'rgba(234,179,8,.06)',   border: 'rgba(234,179,8,.25)'  },
+      resolu:   { bg: 'rgba(34,197,94,.06)',   border: 'rgba(34,197,94,.2)'   },
+    };
+    var sc = statusColors[t.status] || statusColors.ouvert;
+    return '<div class="card" style="margin-bottom:12px;border-color:' + sc.border + ';background:' + sc.bg + ';">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">'
+      + '<div style="flex:1;min-width:200px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'
+      + '<span style="font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid ' + sc.border + ';color:var(--text-soft);">' + (STATUS_LABELS[t.status] || t.status) + '</span>'
+      + '<span style="font-size:11px;color:' + PRIORITY_COLORS[t.priority] + ';">⬥ ' + esc(t.priority) + '</span>'
+      + '<span style="font-size:11px;color:#475569;">' + date + '</span>'
+      + '</div>'
+      + '<h3 style="font-size:15px;font-weight:600;margin-bottom:3px;">' + esc(t.title) + '</h3>'
+      + '<p style="font-size:12px;color:var(--text-soft);margin-bottom:6px;">'
+      + '<strong style="color:#94a3b8;">' + esc(t.organization) + '</strong> · ' + esc(t.request_type)
+      + ' · <span style="color:#6366f1;">' + esc(t.user_email || '') + '</span>'
+      + '</p>'
+      + '<p class="text-soft" style="font-size:12px;white-space:pre-wrap;">' + esc(t.description).slice(0, 400) + (t.description && t.description.length > 400 ? '…' : '') + '</p>'
+      + '</div>'
+      + '<div style="flex-shrink:0;">'
+      + '<button class="btn btn-ghost status-btn" data-id="' + t.id + '" data-next="' + nextStatus + '" style="font-size:12px;">'
+      + (STATUS_NEXT_LABEL[t.status] || 'Modifier')
+      + '</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Style filtre actif ── */
+  var filterStyle = document.createElement('style');
+  filterStyle.textContent = '.active-filter{border-color:rgba(168,85,247,.5)!important;color:var(--text)!important;background:rgba(168,85,247,.08)!important;}';
+  document.head.appendChild(filterStyle);
+
+})();
+</script>
+</body>
+</html>

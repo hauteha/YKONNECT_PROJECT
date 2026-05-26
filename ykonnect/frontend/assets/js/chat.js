@@ -7,65 +7,121 @@
 
   if (!messagesEl || !inputEl || !sendBtn) return;
 
-  function appendMessage(text, from) {
-    from = from || 'bot';
+  var conversationHistory = [];
+  var isStreaming = false;
+
+  function createBotMessageEl() {
     var wrapper = document.createElement('div');
     wrapper.style.marginBottom = '6px';
-    var label = from === 'user' ? 'Vous' : 'Bot';
-    wrapper.innerHTML = '<strong>' + label + ' :</strong> <span class="text-soft">' + text + '</span>';
+    var strong = document.createElement('strong');
+    strong.textContent = 'Bot : ';
+    var span = document.createElement('span');
+    span.className = 'text-soft';
+    wrapper.appendChild(strong);
+    wrapper.appendChild(span);
     messagesEl.appendChild(wrapper);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    return span;
   }
 
-  function appendTyping() {
+  function appendUserMessage(text) {
     var wrapper = document.createElement('div');
-    wrapper.id = 'typingIndicator';
     wrapper.style.marginBottom = '6px';
-    wrapper.innerHTML = '<strong>Bot :</strong> <span class="text-soft" style="opacity:0.6;">...</span>';
+    var strong = document.createElement('strong');
+    strong.textContent = 'Vous : ';
+    var span = document.createElement('span');
+    span.className = 'text-soft';
+    span.textContent = text;
+    wrapper.appendChild(strong);
+    wrapper.appendChild(span);
     messagesEl.appendChild(wrapper);
     messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function removeTyping() {
-    var el = document.getElementById('typingIndicator');
-    if (el) el.remove();
   }
 
   function handleSend() {
+    if (isStreaming) return;
     var text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
     sendBtn.disabled = true;
+    isStreaming = true;
 
-    appendMessage(text, 'user');
-    appendTyping();
+    appendUserMessage(text);
+    var span = createBotMessageEl();
+    span.textContent = '▋';
 
-    fetch('/api/chat', {
+    var fullResponse = '';
+
+    fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message: text, history: conversationHistory })
     })
     .then(function (res) {
-      removeTyping();
       if (!res.ok) {
-        appendMessage('Erreur du serveur. Reessaie dans un instant.', 'bot');
-        sendBtn.disabled = false;
-        inputEl.focus();
+        span.textContent = 'Erreur du serveur. Reessaie dans un instant.';
+        finalize(null);
         return;
       }
-      return res.json();
-    })
-    .then(function (data) {
-      if (data) appendMessage(data.response, 'bot');
-      sendBtn.disabled = false;
-      inputEl.focus();
+
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+
+      function read() {
+        reader.read().then(function (result) {
+          if (result.done) {
+            flush();
+            return;
+          }
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (!line.startsWith('data: ')) continue;
+            var data = line.slice(6);
+            if (data === '[DONE]') { flush(); return; }
+            try {
+              var parsed = JSON.parse(data);
+              fullResponse += parsed.content;
+              span.textContent = fullResponse + '▋';
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            } catch (e) {}
+          }
+          read();
+        }).catch(function () {
+          span.textContent = fullResponse || 'Impossible de joindre le serveur.';
+          finalize(null);
+        });
+      }
+
+      function flush() {
+        span.innerHTML = fullResponse || 'Aucune réponse reçue.';
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        finalize(fullResponse);
+      }
+
+      read();
     })
     .catch(function () {
-      removeTyping();
-      appendMessage('Impossible de joindre le serveur.', 'bot');
-      sendBtn.disabled = false;
-      inputEl.focus();
+      span.textContent = 'Impossible de joindre le serveur.';
+      finalize(null);
     });
+
+    function finalize(botResponse) {
+      if (botResponse) {
+        conversationHistory.push({ role: 'user', content: text });
+        conversationHistory.push({ role: 'assistant', content: botResponse });
+        if (conversationHistory.length > 20) {
+          conversationHistory = conversationHistory.slice(-20);
+        }
+      }
+      sendBtn.disabled = false;
+      isStreaming = false;
+      inputEl.focus();
+    }
   }
 
   sendBtn.addEventListener('click', handleSend);

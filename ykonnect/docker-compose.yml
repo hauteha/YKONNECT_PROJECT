@@ -4,6 +4,11 @@ services:
     restart: unless-stopped
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    volumes:
+      - ykonnect_data:/app/data
     expose:
       - "8000"
     networks:
@@ -22,6 +27,9 @@ services:
       - backend
     networks:
       - ykonnect_net
+
+volumes:
+  ykonnect_data:
 
 networks:
   ykonnect_net:

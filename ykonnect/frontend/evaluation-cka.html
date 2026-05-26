@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Évaluation CKA — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    .eval-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .eval-intro {
+      text-align: center;
+      padding: 32px 20px 24px;
+    }
+
+    .eval-intro h2 {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .eval-intro p {
+      font-size: 14px;
+      color: var(--text-soft);
+      max-width: 520px;
+      margin: 0 auto 8px;
+      line-height: 1.6;
+    }
+
+    .category-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin: 14px 0;
+    }
+
+    /* Steps indicator */
+    .step-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+    }
+
+    .step-seg {
+      flex: 1;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      transition: background 0.3s;
+    }
+
+    .step-seg.done { background: var(--accent); }
+    .step-seg.active { background: var(--primary); }
+
+    /* Question card */
+    .q-card {
+      background: linear-gradient(145deg, rgba(6,13,28,0.98), rgba(9,21,45,0.98));
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+    }
+
+    .q-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .q-category {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+    }
+
+    .q-counter {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .q-text {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .q-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .q-option {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(15,23,42,0.7);
+      padding: 11px 14px;
+      font-size: 13px;
+      color: var(--text-soft);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .q-option:hover:not(:disabled) {
+      border-color: rgba(36,123,255,0.4);
+      background: rgba(36,123,255,0.08);
+      color: var(--text);
+    }
+
+    .q-option.selected {
+      border-color: var(--primary);
+      background: rgba(36,123,255,0.12);
+      color: var(--text);
+    }
+
+    .q-option.correct {
+      border-color: var(--accent);
+      background: rgba(38,198,218,0.12);
+      color: var(--text);
+    }
+
+    .q-option.wrong {
+      border-color: var(--danger);
+      background: rgba(255,75,129,0.08);
+      color: var(--danger);
+    }
+
+    .q-option:disabled { cursor: default; }
+
+    .q-feedback {
+      margin-top: 12px;
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .q-feedback.show { display: block; }
+    .q-feedback.ok { background: rgba(38,198,218,0.1); color: var(--accent); border: 1px solid rgba(38,198,218,0.25); }
+    .q-feedback.ko { background: rgba(255,75,129,0.08); color: #ff8fab; border: 1px solid rgba(255,75,129,0.25); }
+
+    .q-nav {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+
+    /* Results */
+    #results { display: none; }
+
+    .level-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      font-weight: 700;
+      font-size: 14px;
+      margin: 8px 0 4px;
+    }
+
+    .level-debutant { background: rgba(255,75,129,0.15); color: #ff8fab; border: 1px solid rgba(255,75,129,0.3); }
+    .level-intermediaire { background: rgba(36,123,255,0.15); color: #7eb8ff; border: 1px solid rgba(36,123,255,0.3); }
+    .level-avance { background: rgba(38,198,218,0.15); color: var(--accent); border: 1px solid rgba(38,198,218,0.3); }
+    .level-expert { background: rgba(100,200,100,0.15); color: #86efac; border: 1px solid rgba(100,200,100,0.3); }
+
+    .cat-score {
+      margin-bottom: 12px;
+    }
+
+    .cat-score-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+    }
+
+    .reco-card {
+      background: rgba(36,123,255,0.06);
+      border: 1px solid rgba(36,123,255,0.18);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .reco-card h4 {
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .reco-card p {
+      font-size: 12px;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+
+    .reco-card a {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .reco-urgent {
+      background: rgba(255,75,129,0.06);
+      border-color: rgba(255,75,129,0.2);
+    }
+
+    .reco-urgent h4 { color: #ff8fab; }
+
+    .reco-ok {
+      background: rgba(38,198,218,0.06);
+      border-color: rgba(38,198,218,0.2);
+    }
+
+    .score-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-weight: 700;
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 24px rgba(36,123,255,0.4);
+    }
+
+    .score-circle .score-num { font-size: 22px; }
+    .score-circle .score-den { font-size: 11px; color: var(--text-soft); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='certifications.html'">← Retour Certifications</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="certifications.html">Certifications</a> › Évaluation CKA
+    </div>
+    <h1 class="page-header-title">Évaluation de niveau — <span style="color:#26c6da;">CKA</span></h1>
+    <p class="page-header-subtitle">
+      Répondez à 16 questions pour identifier vos points forts et vos lacunes. Le résultat vous donnera un parcours personnalisé.
+    </p>
+  </section>
+
+  <div class="eval-wrap" style="margin-top:20px;">
+
+    <!-- Intro -->
+    <div id="intro" class="card">
+      <div class="eval-intro">
+        <h2>Avant de commencer le parcours CKA</h2>
+        <p>
+          Ce test évalue vos connaissances sur les 4 domaines fondamentaux pour réussir la certification
+          Kubernetes Administrator.
+        </p>
+        <div class="category-pills">
+          <span class="chip">🐧 Linux & CLI</span>
+          <span class="chip">🐳 Docker & Containers</span>
+          <span class="chip">🌐 Réseau (IP, DNS, ports)</span>
+          <span class="chip">☸️ Kubernetes</span>
+        </div>
+        <p style="margin-top:8px; font-size:12px;">16 questions · ~5 minutes · pas de compte requis</p>
+        <button class="btn btn-primary" style="margin-top:16px; font-size:14px; padding:10px 28px;" onclick="startQuiz()">
+          Commencer l'évaluation →
+        </button>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div id="quiz" style="display:none;">
+      <div class="step-bar" id="stepBar"></div>
+      <div class="q-card">
+        <div class="q-meta">
+          <span class="q-category" id="qCategory"></span>
+          <span class="q-counter" id="qCounter"></span>
+        </div>
+        <div class="q-text" id="qText"></div>
+        <div class="q-options" id="qOptions"></div>
+        <div class="q-feedback" id="qFeedback"></div>
+        <div class="q-nav">
+          <button class="btn btn-primary" id="btnNext" style="display:none;" onclick="nextQuestion()">
+            Question suivante →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <div class="card" style="text-align:center; margin-bottom:16px;">
+        <h2 style="font-size:18px; margin-bottom:12px;">Résultats de votre évaluation</h2>
+        <div class="score-circle" id="scoreCircle">
+          <span class="score-num" id="scoreNum"></span>
+          <span class="score-den">/16</span>
+        </div>
+        <div id="levelBadge"></div>
+        <p id="levelDesc" style="font-size:13px; color:var(--text-soft); margin-top:8px; max-width:480px; margin-inline:auto;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 class="section-title" style="margin-bottom:14px;">Score par domaine</h3>
+        <div id="catScores"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 class="section-title" style="margin-bottom:14px;">Votre parcours recommandé</h3>
+        <div id="recommendations"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+        <button class="btn btn-primary" onclick="window.location='certifications.html'">
+          ☸️ Voir le parcours CKA
+        </button>
+        <button class="btn btn-ghost" onclick="resetQuiz()">
+          Refaire l'évaluation
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /eval-wrap -->
+</div><!-- /page -->
+
+<script>
+var QUESTIONS = [
+  // ── Linux & CLI ──
+  {
+    cat: "Linux & CLI", catKey: "linux",
+    q: "Quelle commande affiche en temps réel l'utilisation CPU et mémoire des processus ?",
+    opts: ["top", "ps aux", "df -h", "lsof"],
+    correct: 0,
+    explain: "`top` (ou `htop`) affiche les processus en temps réel avec CPU et mémoire."
+  },
+  {
+    cat: "Linux & CLI", catKey: "linux",
+    q: "Comment rendre un script bash exécutable ?",
+    opts: ["chmod +x script.sh", "bash -x script.sh", "exec script.sh", "run script.sh"],
+    correct: 0,
+    explain: "`chmod +x` ajoute le bit d'exécution sur le fichier."
+  },
+  {
+    cat: "Linux & CLI", catKey: "linux",
+    q: "Quelle commande affiche les journaux d'un service systemd (ex: nginx) ?",
+    opts: ["journalctl -u nginx", "cat /var/log/nginx", "systemctl logs nginx", "tail /etc/nginx/log"],
+    correct: 0,
+    explain: "`journalctl -u <service>` lit les logs du service depuis le journal systemd."
+  },
+  {
+    cat: "Linux & CLI", catKey: "linux",
+    q: "Que signifie `2>/dev/null` dans une commande shell ?",
+    opts: ["Redirige stderr vers /dev/null (supprime les erreurs)", "Redirige stdout vers un fichier nul", "Lit l'entrée depuis /dev/null", "Duplique stdout vers stderr"],
+    correct: 0,
+    explain: "`2>` redirige le descripteur de fichier 2 (stderr). `/dev/null` est la corbeille du système."
+  },
+  // ── Docker & Containers ──
+  {
+    cat: "Docker & Containers", catKey: "docker",
+    q: "Quelle commande lance un conteneur en arrière-plan avec le port 8080 du host mappé sur le port 80 du conteneur ?",
+    opts: ["docker run -d -p 8080:80 nginx", "docker start -p 8080:80 nginx", "docker run --background -port 8080:80 nginx", "docker exec -d -p 8080:80 nginx"],
+    correct: 0,
+    explain: "`-d` pour detached (arrière-plan), `-p host:conteneur` pour le mapping de port."
+  },
+  {
+    cat: "Docker & Containers", catKey: "docker",
+    q: "Quelle instruction Dockerfile définit la commande exécutée au démarrage du conteneur ?",
+    opts: ["CMD", "RUN", "EXEC", "START"],
+    correct: 0,
+    explain: "`CMD` définit la commande par défaut. `RUN` exécute des commandes pendant le build de l'image."
+  },
+  {
+    cat: "Docker & Containers", catKey: "docker",
+    q: "Qu'est-ce qu'un volume Docker ?",
+    opts: ["Un répertoire persistant géré par Docker, indépendant du cycle de vie du conteneur", "La mémoire RAM allouée au conteneur", "Une image compressée", "Un réseau virtuel entre conteneurs"],
+    correct: 0,
+    explain: "Les volumes persistent après la suppression du conteneur, contrairement aux données dans le layer writable."
+  },
+  {
+    cat: "Docker & Containers", catKey: "docker",
+    q: "Quelle commande affiche les logs d'un conteneur en cours d'exécution (avec suivi en temps réel) ?",
+    opts: ["docker logs -f <conteneur>", "docker exec logs <conteneur>", "docker inspect <conteneur>", "docker ps -l <conteneur>"],
+    correct: 0,
+    explain: "`docker logs -f` suit les logs en temps réel, équivalent à `tail -f`."
+  },
+  // ── Réseau ──
+  {
+    cat: "Réseau", catKey: "reseau",
+    q: "Quel port utilise HTTPS par défaut ?",
+    opts: ["443", "80", "8443", "22"],
+    correct: 0,
+    explain: "HTTP : 80 · HTTPS : 443 · SSH : 22. À connaître absolument pour les NetworkPolicy K8s."
+  },
+  {
+    cat: "Réseau", catKey: "reseau",
+    q: "Qu'est-ce qu'un VLAN ?",
+    opts: ["Un réseau local virtuel qui segmente le trafic au niveau L2 (switch)", "Un protocole de routage L3", "Une interface réseau virtuelle côté OS", "Une technique de chiffrement réseau"],
+    correct: 0,
+    explain: "Les VLANs isolent le trafic au niveau de la couche 2 (liaison), même sur un switch physique partagé."
+  },
+  {
+    cat: "Réseau", catKey: "reseau",
+    q: "Quelle est la différence principale entre TCP et UDP ?",
+    opts: ["TCP garantit la livraison avec accusé de réception ; UDP est sans connexion et plus rapide", "UDP garantit la livraison ; TCP est sans connexion", "TCP est réservé au web ; UDP au réseau local", "Il n'y a aucune différence en termes de fiabilité"],
+    correct: 0,
+    explain: "TCP : 3-way handshake, retransmission, ordre garanti. UDP : pas d'accusé de réception, latence plus faible."
+  },
+  {
+    cat: "Réseau", catKey: "reseau",
+    q: "Qu'est-ce que le DNS résout ?",
+    opts: ["Un nom de domaine en adresse IP", "Une adresse IP en adresse MAC", "Un port en protocole", "Une URL en chemin de fichier"],
+    correct: 0,
+    explain: "Le DNS (Domain Name System) traduit les noms lisibles (ex: google.com) en adresses IP (ex: 142.250.x.x)."
+  },
+  // ── Kubernetes ──
+  {
+    cat: "Kubernetes", catKey: "k8s",
+    q: "Qu'est-ce qu'un Pod Kubernetes ?",
+    opts: ["La plus petite unité déployable, contenant un ou plusieurs conteneurs partageant réseau et stockage", "Un nœud physique du cluster", "Un service d'exposition réseau", "Un volume de stockage persistant"],
+    correct: 0,
+    explain: "Les conteneurs d'un même Pod partagent le namespace réseau (même IP) et peuvent partager des volumes."
+  },
+  {
+    cat: "Kubernetes", catKey: "k8s",
+    q: "Quelle commande liste tous les Pods dans tous les namespaces ?",
+    opts: ["kubectl get pods -A", "kubectl list pods --all", "kubectl show pods -n all", "k8s pods list"],
+    correct: 0,
+    explain: "`-A` ou `--all-namespaces` liste les ressources de tous les namespaces. Indispensable à l'examen CKA."
+  },
+  {
+    cat: "Kubernetes", catKey: "k8s",
+    q: "Quelle ressource K8s expose un ensemble de Pods sur le réseau interne du cluster (IP stable) ?",
+    opts: ["Service (ClusterIP)", "Ingress", "ConfigMap", "DaemonSet"],
+    correct: 0,
+    explain: "Un Service ClusterIP crée une IP virtuelle stable qui load-balance vers les Pods sélectionnés par le selector."
+  },
+  {
+    cat: "Kubernetes", catKey: "k8s",
+    q: "Qu'est-ce que le RBAC dans Kubernetes ?",
+    opts: ["Un système de contrôle d'accès basé sur des rôles (Role-Based Access Control)", "Un protocole de communication entre noeuds", "Un mécanisme de réplication des données", "Un outil de monitoring du cluster"],
+    correct: 0,
+    explain: "Le RBAC définit qui (ServiceAccount/User) peut faire quoi (verbes) sur quelles ressources (resources)."
+  }
+];
+
+var current = 0;
+var answers = [];
+var scores = { linux: 0, docker: 0, reseau: 0, k8s: 0 };
+var answered = false;
+var shuffledCorrect = 0; // index de la bonne réponse après mélange
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+function startQuiz() {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  buildStepBar();
+  renderQuestion();
+}
+
+function buildStepBar() {
+  var bar = document.getElementById('stepBar');
+  bar.innerHTML = '';
+  QUESTIONS.forEach(function(_, i) {
+    var seg = document.createElement('div');
+    seg.className = 'step-seg';
+    seg.id = 'seg-' + i;
+    bar.appendChild(seg);
+  });
+  updateStepBar();
+}
+
+function updateStepBar() {
+  QUESTIONS.forEach(function(_, i) {
+    var seg = document.getElementById('seg-' + i);
+    if (i < current) seg.className = 'step-seg done';
+    else if (i === current) seg.className = 'step-seg active';
+    else seg.className = 'step-seg';
+  });
+}
+
+function renderQuestion() {
+  answered = false;
+  var q = QUESTIONS[current];
+  document.getElementById('qCategory').textContent = q.cat;
+  document.getElementById('qCounter').textContent = (current + 1) + ' / ' + QUESTIONS.length;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('qFeedback').className = 'q-feedback';
+  document.getElementById('btnNext').style.display = 'none';
+
+  // Mélange les options et retient où est la bonne réponse
+  var indices = shuffle([0, 1, 2, 3]);
+  shuffledCorrect = indices.indexOf(q.correct);
+
+  var opts = document.getElementById('qOptions');
+  opts.innerHTML = '';
+  indices.forEach(function(origIdx, displayIdx) {
+    var btn = document.createElement('button');
+    btn.className = 'q-option';
+    btn.textContent = q.opts[origIdx];
+    btn.onclick = (function(di) { return function() { selectAnswer(di); }; })(displayIdx);
+    opts.appendChild(btn);
+  });
+
+  updateStepBar();
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+
+  var q = QUESTIONS[current];
+  var opts = document.getElementById('qOptions').querySelectorAll('.q-option');
+  var isCorrect = idx === shuffledCorrect;
+
+  opts.forEach(function(btn, i) {
+    btn.disabled = true;
+    if (i === shuffledCorrect) btn.classList.add('correct');
+    else if (i === idx && !isCorrect) btn.classList.add('wrong');
+  });
+
+  if (isCorrect) scores[q.catKey]++;
+  answers.push(isCorrect);
+
+  var fb = document.getElementById('qFeedback');
+  fb.textContent = (isCorrect ? '✓ Correct — ' : '✗ Incorrect — ') + q.explain;
+  fb.className = 'q-feedback show ' + (isCorrect ? 'ok' : 'ko');
+
+  if (current + 1 < QUESTIONS.length) {
+    document.getElementById('btnNext').style.display = 'inline-flex';
+  } else {
+    var btn = document.getElementById('btnNext');
+    btn.textContent = 'Voir les résultats →';
+    btn.style.display = 'inline-flex';
+    btn.onclick = showResults;
+  }
+}
+
+function nextQuestion() {
+  current++;
+  renderQuestion();
+}
+
+function showResults() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+
+  var total = answers.filter(Boolean).length;
+  document.getElementById('scoreNum').textContent = total;
+
+  // Level
+  var level, levelClass, desc;
+  if (total <= 5) {
+    level = 'Débutant'; levelClass = 'level-debutant';
+    desc = 'Des bases importantes sont à renforcer avant d\'aborder Kubernetes. Pas d\'inquiétude — le parcours ci-dessous vous guidera étape par étape.';
+  } else if (total <= 9) {
+    level = 'Intermédiaire'; levelClass = 'level-intermediaire';
+    desc = 'Vous avez de bonnes bases mais quelques domaines nécessitent un renforcement avant de vous lancer sereinement dans la CKA.';
+  } else if (total <= 13) {
+    level = 'Avancé'; levelClass = 'level-avance';
+    desc = 'Vous maîtrisez la plupart des prérequis. Quelques révisions ciblées et vous êtes prêt à passer la CKA.';
+  } else {
+    level = 'Expert'; levelClass = 'level-expert';
+    desc = 'Excellente maîtrise des prérequis. Vous pouvez vous concentrer directement sur les modules avancés et la pratique sur cluster réel.';
+  }
+
+  document.getElementById('levelBadge').innerHTML = '<span class="level-badge ' + levelClass + '">' + level + '</span>';
+  document.getElementById('levelDesc').textContent = desc;
+
+  // Category scores
+  var cats = [
+    { key: 'linux', label: '🐧 Linux & CLI', max: 4 },
+    { key: 'docker', label: '🐳 Docker & Containers', max: 4 },
+    { key: 'reseau', label: '🌐 Réseau', max: 4 },
+    { key: 'k8s', label: '☸️ Kubernetes', max: 4 }
+  ];
+  var catHtml = '';
+  cats.forEach(function(c) {
+    var s = scores[c.key];
+    var pct = (s / c.max) * 100;
+    var color = pct >= 75 ? 'var(--accent)' : pct >= 50 ? 'var(--primary)' : 'var(--danger)';
+    catHtml += '<div class="cat-score">'
+      + '<div class="cat-score-label"><span>' + c.label + '</span><span>' + s + '/' + c.max + '</span></div>'
+      + '<div class="progress-bar-wrap"><div class="progress-bar" style="width:' + pct + '%; background:' + color + '"></div></div>'
+      + '</div>';
+  });
+  document.getElementById('catScores').innerHTML = catHtml;
+
+  // Recommendations
+  var recos = [];
+
+  if (scores.linux < 2) {
+    recos.push({
+      urgent: true,
+      title: '🐧 Renforcez vos bases Linux en priorité',
+      body: 'Linux est le fondement de Kubernetes. Commencez par l\'article <a href="article.html?id=2">Hardening Linux</a>, puis pratiquez la ligne de commande (processus, fichiers, systemd, permissions).'
+    });
+  } else {
+    recos.push({
+      urgent: false,
+      title: '🐧 Linux — bon niveau',
+      body: 'Vos bases Linux sont solides. Continuez à pratiquer les commandes kubectl en ligne de commande pour l\'examen.'
+    });
+  }
+
+  if (scores.docker < 2) {
+    recos.push({
+      urgent: true,
+      title: '🐳 Révisez Docker avant Kubernetes',
+      body: 'Kubernetes orchestre des conteneurs Docker. Sans maîtrise des concepts de base (images, volumes, réseaux), certains modules K8s seront difficiles à appréhender.'
+    });
+  } else {
+    recos.push({
+      urgent: false,
+      title: '🐳 Docker — bonne maîtrise',
+      body: 'Vous comprenez les conteneurs. Vous pouvez directement aborder les Pods et Deployments K8s (Module 1 & 2).'
+    });
+  }
+
+  if (scores.reseau < 2) {
+    recos.push({
+      urgent: true,
+      title: '🌐 Révisez les bases réseau',
+      body: 'Le module Networking K8s (20% de l\'examen) requiert de maîtriser DNS, ports et routage. Commencez par l\'article <a href="article.html?id=1">Comprendre les VLANs</a> et révisez TCP/IP.'
+    });
+  } else {
+    recos.push({
+      urgent: false,
+      title: '🌐 Réseau — bases OK',
+      body: 'Vous êtes prêt pour le <a href="cka-networking.html">Module 3 — Networking K8s</a> (Services, Ingress, NetworkPolicy, CoreDNS).'
+    });
+  }
+
+  if (scores.k8s < 2) {
+    recos.push({
+      urgent: false,
+      title: '☸️ Point de départ : Module 1 — Architecture K8s',
+      body: 'Commencez par le <a href="cka-archi.html">Module 1</a> pour comprendre etcd, l\'API Server et le plan de contrôle. Progressez ensuite module par module.'
+    });
+  } else if (scores.k8s < 4) {
+    recos.push({
+      urgent: false,
+      title: '☸️ Consolidez avec les modules avancés',
+      body: 'Vous avez des bases K8s. Concentrez-vous sur les modules que vous maîtrisez le moins : '
+        + '<a href="cka-securite.html">Sécurité RBAC</a> et <a href="cka-networking.html">Networking</a> (domaines les plus pondérés à l\'examen).'
+    });
+  } else {
+    recos.push({
+      urgent: false,
+      title: '☸️ Kubernetes — excellent niveau',
+      body: 'Vous maîtrisez K8s. Passez directement à la pratique sur <strong>killer.sh</strong> (simulateur officiel inclus avec le voucher CKA) et entraînez-vous sur les commandes kubectl sous pression de temps.'
+    });
+  }
+
+  var recosHtml = recos.map(function(r) {
+    return '<div class="reco-card' + (r.urgent ? ' reco-urgent' : ' reco-ok') + '">'
+      + '<h4>' + r.title + '</h4>'
+      + '<p>' + r.body + '</p>'
+      + '</div>';
+  }).join('');
+  document.getElementById('recommendations').innerHTML = recosHtml;
+}
+
+function resetQuiz() {
+  current = 0;
+  answers = [];
+  scores = { linux: 0, docker: 0, reseau: 0, k8s: 0 };
+  answered = false;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('btnNext').onclick = nextQuestion;
+  document.getElementById('quiz').style.display = 'block';
+  buildStepBar();
+  renderQuestion();
+}
+</script>
+<script src="assets/js/chat-widget.js"></script>
+</body>
+</html>

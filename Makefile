@@ -2,11 +2,17 @@
 #  YKonnect — Makefile
 #  Usage : make install
 #          SSH_PASS=monmotdepasse make install
+#          make up          (lancer en local)
+#          make down        (arreter en local)
 # ============================================================
 
 SERVER_IP  ?= 192.168.4.80
 SSH_USER   ?= hau
 SSH_PASS   ?= hau
+SUDO_PASS  ?= hau
+
+COMPOSE_DIR = ykonnect
+COMPOSE     = echo "$(SUDO_PASS)" | sudo -S docker compose -f $(COMPOSE_DIR)/docker-compose.yml
 
 ANSIBLE     = ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
               -i ansible/inventory.ini ansible/deploy-ykonnect.yml \
@@ -14,7 +20,53 @@ ANSIBLE     = ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook \
 
 .DEFAULT_GOAL := help
 
-.PHONY: install terraform ykonnect status logs reload destroy check help
+.PHONY: install terraform ykonnect up down restart build ps logs-local status logs reload destroy check help
+
+# ------------------------------------------------------------
+#  UP — lance le stack YKonnect en local (build + start)
+# ------------------------------------------------------------
+up: check-env
+	@echo "==> Lancement du stack YKonnect..."
+	$(COMPOSE) up -d --build
+	@echo ""
+	@echo "  Stack demarre !"
+	@echo "  YKonnect  : http://$(SERVER_IP):8081"
+	@echo "  Prometheus: http://$(SERVER_IP):9090"
+	@echo "  Grafana   : http://$(SERVER_IP):3000"
+	@echo "  Portainer : http://$(SERVER_IP):9000"
+	@echo "  Admin     : http://$(SERVER_IP):8081/admin.html"
+
+# ------------------------------------------------------------
+#  DOWN — arrete et supprime les conteneurs
+# ------------------------------------------------------------
+down:
+	@echo "==> Arret du stack YKonnect..."
+	$(COMPOSE) down
+
+# ------------------------------------------------------------
+#  RESTART — redemarrage complet
+# ------------------------------------------------------------
+restart: down up
+
+# ------------------------------------------------------------
+#  BUILD — rebuild les images sans relancer
+# ------------------------------------------------------------
+build: check-env
+	@echo "==> Build des images..."
+	$(COMPOSE) build --no-cache
+
+# ------------------------------------------------------------
+#  PS — etat des conteneurs locaux
+# ------------------------------------------------------------
+ps:
+	@$(COMPOSE) ps
+
+# ------------------------------------------------------------
+#  LOGS-LOCAL — logs d'un service local (make logs-local S=backend)
+# ------------------------------------------------------------
+S ?= backend
+logs-local:
+	@$(COMPOSE) logs -f $(S)
 
 # ------------------------------------------------------------
 #  INSTALL — deploie tout en une commande
@@ -103,15 +155,26 @@ check-env:
 # ------------------------------------------------------------
 help:
 	@echo ""
+	@echo "  -- LOCAL (Docker Compose) --"
+	@echo "  make up                   Lancer le stack YKonnect (build + start)"
+	@echo "  make down                 Arreter le stack"
+	@echo "  make restart              Redemarrer le stack"
+	@echo "  make build                Rebuild les images sans relancer"
+	@echo "  make ps                   Etat des conteneurs locaux"
+	@echo "  make logs-local [S=...]   Logs d'un service local (defaut: backend)"
+	@echo ""
+	@echo "  -- DEPLOIEMENT (Terraform + Ansible) --"
 	@echo "  make install              Deployer toute l'infrastructure"
 	@echo "  make terraform            Deployer uniquement l'infra principale"
-	@echo "  make ykonnect             Deployer uniquement YKonnect"
-	@echo "  make status               Voir les conteneurs actifs"
-	@echo "  make logs [SERVICE=...]   Suivre les logs d'un conteneur"
+	@echo "  make ykonnect             Deployer uniquement YKonnect via Ansible"
+	@echo "  make status               Voir les conteneurs actifs (SSH)"
+	@echo "  make logs [SERVICE=...]   Suivre les logs d'un conteneur (SSH)"
 	@echo "  make reload               Recharger la config Prometheus"
 	@echo "  make destroy              Supprimer l'infrastructure principale"
 	@echo ""
 	@echo "  Variables :"
-	@echo "    SSH_PASS=xxx make install    Passer le mot de passe SSH"
+	@echo "    SUDO_PASS=xxx make up        Mot de passe sudo local (defaut: hau)"
+	@echo "    SSH_PASS=xxx make install    Mot de passe SSH (defaut: hau)"
 	@echo "    SERVER_IP=x.x.x.x make ...  Changer le serveur cible"
+	@echo "    S=frontend make logs-local  Logs du service frontend"
 	@echo ""

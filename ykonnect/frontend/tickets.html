@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mes tickets — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions"></div>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="nav-mobile" id="navMobile">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <!-- Pas connecté -->
+  <div id="guestView" style="display:none; text-align:center; padding:60px 20px;">
+    <div style="font-size:48px; margin-bottom:16px;">🎫</div>
+    <h2 style="font-size:22px; margin-bottom:10px;">Accès réservé</h2>
+    <p class="text-soft" style="margin-bottom:24px;">Vous devez être connecté pour soumettre ou consulter vos tickets.</p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+      <button class="btn btn-primary" onclick="window.ykAuth.openLogin()">🔑 Se connecter</button>
+      <button class="btn btn-outline-primary" onclick="window.ykAuth.openRegister()">✨ Créer un compte</button>
+    </div>
+  </div>
+
+  <!-- Connecté -->
+  <div id="authView" style="display:none;">
+
+    <section class="page-header">
+      <div class="breadcrumb"><a href="index.html">Accueil</a> › Tickets</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h1 class="page-header-title">🎫 Mes tickets d'infrastructure</h1>
+          <p class="page-header-subtitle">Soumettre une demande d'aide, de conseil ou de mise en place d'infrastructure.</p>
+        </div>
+        <button class="btn btn-primary" id="btnNewTicket">+ Nouveau ticket</button>
+      </div>
+    </section>
+
+    <!-- Formulaire nouveau ticket -->
+    <div id="ticketForm" class="card" style="display:none; margin-top:18px; max-width:680px;">
+      <h3 style="font-size:16px; font-weight:700; margin-bottom:16px;">Nouvelle demande</h3>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label class="label">Titre de la demande *</label>
+        <input class="input" id="fTitle" type="text" placeholder="Ex : Mise en place d'un cluster K8s pour notre asso" />
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+        <div class="field">
+          <label class="label">Nom de l'organisation / groupe *</label>
+          <input class="input" id="fOrg" type="text" placeholder="Ex : BDE Infra, Asso RésIntech…" />
+        </div>
+        <div class="field">
+          <label class="label">Type de demande *</label>
+          <select class="input" id="fType">
+            <option value="">-- Choisir --</option>
+            <option value="Mise en place infrastructure">Mise en place infrastructure</option>
+            <option value="Audit sécurité">Audit sécurité</option>
+            <option value="Conseil réseau">Conseil réseau</option>
+            <option value="Déploiement application">Déploiement application</option>
+            <option value="Proposition de projet">Proposition de projet</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:14px;">
+        <label class="label">Priorité</label>
+        <div style="display:flex; gap:10px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-soft);">
+            <input type="radio" name="priority" value="basse" /> Basse
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-soft);">
+            <input type="radio" name="priority" value="normale" checked /> Normale
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-soft);">
+            <input type="radio" name="priority" value="urgente" /> Urgente
+          </label>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:16px;">
+        <label class="label">Description détaillée *</label>
+        <textarea class="input textarea" id="fDesc" placeholder="Décrivez votre besoin : contexte, contraintes techniques, délai souhaité, stack actuelle…"></textarea>
+      </div>
+
+      <div id="formErr" style="color:#f87171;font-size:12px;margin-bottom:10px;display:none;"></div>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" id="submitTicket">Envoyer la demande →</button>
+        <button class="btn btn-ghost" id="cancelTicket">Annuler</button>
+      </div>
+    </div>
+
+    <!-- Liste tickets -->
+    <section style="margin-top:22px;">
+      <h2 class="section-title">Mes demandes</h2>
+      <div id="ticketList"></div>
+      <p id="noTickets" style="display:none; color:var(--text-soft); font-size:13px; padding:20px 0;">
+        Aucune demande pour l'instant. Cliquez sur "Nouveau ticket" pour commencer.
+      </p>
+    </section>
+
+  </div>
+</div>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/chat-widget.js"></script>
+<script>
+(function () {
+  var STATUS_LABELS = { ouvert: '🔵 Ouvert', en_cours: '🟡 En cours', resolu: '✅ Résolu' };
+  var STATUS_COLORS = {
+    ouvert:   'rgba(168,85,247,.15)',
+    en_cours: 'rgba(234,179,8,.15)',
+    resolu:   'rgba(34,197,94,.15)',
+  };
+  var STATUS_BORDER = {
+    ouvert:   'rgba(168,85,247,.35)',
+    en_cours: 'rgba(234,179,8,.35)',
+    resolu:   'rgba(34,197,94,.35)',
+  };
+  var PRIORITY_COLORS = { basse: '#64748b', normale: '#06b6d4', urgente: '#f43f5e' };
+
+  function init() {
+    var user = window.ykAuth && window.ykAuth.user();
+    if (!user) {
+      document.getElementById('guestView').style.display = 'block';
+    } else {
+      document.getElementById('authView').style.display = 'block';
+      loadTickets();
+    }
+
+    document.getElementById('btnNewTicket').addEventListener('click', function () {
+      var f = document.getElementById('ticketForm');
+      f.style.display = f.style.display === 'none' ? '' : 'none';
+    });
+
+    document.getElementById('cancelTicket').addEventListener('click', function () {
+      document.getElementById('ticketForm').style.display = 'none';
+    });
+
+    document.getElementById('submitTicket').addEventListener('click', submitTicket);
+  }
+
+  function loadTickets() {
+    fetch('/api/tickets', { headers: window.ykAuth.headers() })
+    .then(function (r) { return r.json(); })
+    .then(function (tickets) {
+      var list = document.getElementById('ticketList');
+      var none = document.getElementById('noTickets');
+      if (!tickets.length) { none.style.display = ''; return; }
+      none.style.display = 'none';
+      list.innerHTML = tickets.map(renderTicket).join('');
+    })
+    .catch(function () {
+      document.getElementById('ticketList').innerHTML = '<p style="color:#f87171;font-size:13px;">Erreur lors du chargement des tickets.</p>';
+    });
+  }
+
+  function renderTicket(t) {
+    var date = t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '';
+    return '<div class="card" style="margin-bottom:12px;border-color:' + STATUS_BORDER[t.status] + ';background:' + STATUS_COLORS[t.status] + '20;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">'
+      + '<div>'
+      + '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">' + esc(t.title) + '</h3>'
+      + '<p style="font-size:12px;color:var(--text-soft);">' + esc(t.organization) + ' · ' + esc(t.request_type) + '</p>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+      + '<span style="font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid ' + STATUS_BORDER[t.status] + ';color:var(--text-soft);">' + (STATUS_LABELS[t.status] || t.status) + '</span>'
+      + '<span style="font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.1);color:' + PRIORITY_COLORS[t.priority] + ';">⬥ ' + t.priority + '</span>'
+      + '<span style="font-size:11px;color:#475569;">' + date + '</span>'
+      + '</div>'
+      + '</div>'
+      + '<p class="text-soft" style="font-size:13px;white-space:pre-wrap;">' + esc(t.description).slice(0, 300) + (t.description.length > 300 ? '…' : '') + '</p>'
+      + '</div>';
+  }
+
+  function submitTicket() {
+    var title  = document.getElementById('fTitle').value.trim();
+    var org    = document.getElementById('fOrg').value.trim();
+    var type   = document.getElementById('fType').value;
+    var prio   = document.querySelector('input[name="priority"]:checked').value;
+    var desc   = document.getElementById('fDesc').value.trim();
+    var errEl  = document.getElementById('formErr');
+
+    if (!title || !org || !type || !desc) {
+      errEl.textContent = 'Veuillez remplir tous les champs obligatoires.';
+      errEl.style.display = 'block'; return;
+    }
+    errEl.style.display = 'none';
+    var btn = document.getElementById('submitTicket');
+    btn.disabled = true;
+
+    fetch('/api/tickets', {
+      method: 'POST',
+      headers: window.ykAuth.headers(),
+      body: JSON.stringify({ title:title, organization:org, request_type:type, priority:prio, description:desc })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+    .then(function (res) {
+      if (!res.ok) { errEl.textContent = res.data.detail || 'Erreur.'; errEl.style.display = 'block'; btn.disabled = false; return; }
+      document.getElementById('ticketForm').style.display = 'none';
+      ['fTitle','fOrg','fDesc'].forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('fType').selectedIndex = 0;
+      loadTickets();
+    })
+    .catch(function () { errEl.textContent = 'Impossible de joindre le serveur.'; errEl.style.display = 'block'; btn.disabled = false; });
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Attendre auth.js
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 80);
+  }
+})();
+</script>
+</body>
+</html>

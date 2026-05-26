@@ -14,24 +14,46 @@ cd YKONNECT_PROJECT
 
 # Configurer les secrets (voir section Prérequis)
 cp terraform.tfvars.example terraform.tfvars  # puis éditer
-echo "GROQ_API_KEY=gsk_..." > ykonnect/.env
+cat > ykonnect/.env <<EOF
+GROQ_API_KEY=gsk_...
+JWT_SECRET=changez-moi-en-production
+ADMIN_EMAIL=admin@ykonnect.fr
+ADMIN_PASSWORD=VotreMotDePasseAdmin
+EOF
 
-# Déployer toute l'infrastructure en une commande
+# ── Option A : lancer en local (Docker Compose direct) ──
+make up
+
+# ── Option B : déployer via Terraform + Ansible ──
 make install
-
 # Ou avec un mot de passe SSH différent
 SSH_PASS=monmotdepasse make install
 ```
 
-Commandes disponibles :
+---
+
+## Commandes disponibles
+
+### Local (Docker Compose)
+
+| Commande | Description |
+|----------|-------------|
+| `make up` | Build et démarre le stack YKonnect |
+| `make down` | Arrête et supprime les conteneurs |
+| `make restart` | Redémarrage complet |
+| `make build` | Rebuild les images sans relancer |
+| `make ps` | État des conteneurs locaux |
+| `make logs-local` | Logs du backend (`S=nginx` pour un autre service) |
+
+### Déploiement (Terraform + Ansible)
 
 | Commande | Description |
 |----------|-------------|
 | `make install` | Déployer toute l'infrastructure (Terraform + Ansible) |
 | `make terraform` | Déployer uniquement l'infra principale |
-| `make ykonnect` | Déployer uniquement YKonnect |
-| `make status` | Voir les conteneurs actifs sur le serveur |
-| `make logs` | Suivre les logs d'un conteneur (`SERVICE=grafana`) |
+| `make ykonnect` | Déployer uniquement YKonnect via Ansible |
+| `make status` | Voir les conteneurs actifs sur le serveur (SSH) |
+| `make logs` | Suivre les logs d'un conteneur SSH (`SERVICE=grafana`) |
 | `make reload` | Recharger la config Prometheus sans redémarrage |
 | `make destroy` | Supprimer l'infrastructure principale |
 
@@ -46,6 +68,7 @@ Commandes disponibles :
 - [Déploiement — YKonnect (Ansible)](#déploiement--ykonnect-ansible)
 - [Monitoring](#monitoring)
 - [YKonnect — Détails techniques](#ykonnect--détails-techniques)
+- [Comptes utilisateurs et tickets](#comptes-utilisateurs-et-tickets)
 - [Opérations courantes](#opérations-courantes)
 - [Points d'attention](#points-dattention)
 
@@ -57,7 +80,7 @@ Commandes disponibles :
 192.168.4.80
 │
 ├── :80        Nginx — Site vitrine principal (liens vers les outils)
-├── :8081      YKonnect — Hub d'articles IT + Chatbot IA (Llama 3.3 / Groq)
+├── :8081      YKonnect — Hub d'articles IT + Chatbot IA + Système de tickets
 ├── :9000      Portainer — Gestion des conteneurs Docker
 ├── :9090      Prometheus — Collecte des métriques
 ├── :3000      Grafana — Dashboards et alertes
@@ -69,8 +92,10 @@ Commandes disponibles :
 ```
 
 **YKonnect** (port 8081) fonctionne en Docker Compose indépendant avec deux conteneurs :
-- `ykonnect-backend` : FastAPI + Groq API (chatbot IA)
+- `ykonnect-backend` : FastAPI + Groq API (chatbot IA) + auth JWT + tickets SQLite
 - `ykonnect-frontend` : Nginx servant les pages HTML statiques
+
+Les données SQLite sont persistées dans un volume Docker : `ykonnect_data:/app/data`.
 
 ---
 
@@ -78,6 +103,7 @@ Commandes disponibles :
 
 ```
 infra-deployment/
+├── Makefile                        # Orchestration locale + déploiement
 ├── main.tf                         # Infra principale (Terraform)
 ├── variables.tf
 ├── terraform.tfvars                # ⚠️ Ne pas commiter (secrets)
@@ -85,38 +111,39 @@ infra-deployment/
 ├── .gitignore
 │
 ├── monitoring/
-│   └── prometheus.yml              # Config scraping (inclut le job ykonnect)
+│   └── prometheus.yml
 │
 ├── grafana/
 │   └── provisioning/
-│       ├── datasources/
-│       │   └── prometheus.yml      # Datasource auto-provisionnée
+│       ├── datasources/prometheus.yml
 │       └── dashboards/
 │           ├── dashboards.yml
 │           └── json/
 │               ├── node-exporter.json
 │               ├── postgresql.json
-│               └── ykonnect.json   # Dashboard 6 panneaux YKonnect
+│               └── ykonnect.json
 │
 ├── website/
 │   ├── nginx.conf
-│   └── html/
-│       └── index.html              # Page vitrine avec liens vers les outils
+│   └── html/index.html
 │
 ├── ykonnect/
-│   ├── docker-compose.yml          # Orchestration backend + frontend
-│   ├── .env                        # GROQ_API_KEY (⚠️ ne pas commiter)
+│   ├── docker-compose.yml          # Backend + frontend + volume SQLite
+│   ├── .env                        # GROQ_API_KEY, JWT_SECRET, ADMIN_* (⚠️ ne pas commiter)
 │   ├── .gitignore
 │   ├── nginx/
-│   │   └── nginx.conf              # Proxy /api/* vers le backend
+│   │   └── nginx.conf              # Proxy /api/* + SSE (proxy_buffering off)
 │   ├── backend/
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
-│   │   └── main.py                 # FastAPI + Groq + métriques Prometheus
+│   │   └── main.py                 # FastAPI + Groq SSE + JWT + SQLAlchemy
 │   └── frontend/
-│       ├── index.html
+│       ├── index.html              # Page d'accueil (hero, stats, recherche)
 │       ├── articles.html
-│       ├── certifications.html
+│       ├── certifications.html     # Parcours CKA + lien évaluation
+│       ├── evaluation-cka.html     # Quiz 16 questions / 4 catégories
+│       ├── tickets.html            # Soumission de tickets (auth requise)
+│       ├── admin.html              # Dashboard admin (accès direct /admin.html)
 │       ├── wireguard.html
 │       ├── fail2ban.html
 │       ├── haproxy.html
@@ -124,20 +151,19 @@ infra-deployment/
 │       ├── cka-workloads.html
 │       ├── cka-networking.html
 │       ├── cka-securite.html
-│       ├── article.html
 │       ├── themes.html
 │       ├── about.html
 │       ├── contact.html
 │       └── assets/
-│           ├── css/styles.css
+│           ├── css/styles.css      # Design neon/cyberpunk (glassmorphism)
 │           └── js/
-│               ├── chat.js
-│               ├── main.js
-│               └── auth.js
+│               ├── main.js         # Hamburger, typing anim, compteurs, recherche
+│               ├── auth.js         # Modales login/register, JWT localStorage
+│               └── chat-widget.js  # Chatbot flottant SSE + choix d'avatar
 │
 └── ansible/
-    ├── inventory.ini               # Cible : 192.168.4.80
-    └── deploy-ykonnect.yml         # Playbook de déploiement YKonnect
+    ├── inventory.ini
+    └── deploy-ykonnect.yml
 ```
 
 ---
@@ -146,7 +172,7 @@ infra-deployment/
 
 ### Sur le serveur (192.168.4.80)
 
-**Installer Docker** (si ce n'est pas déjà fait) :
+**Installer Docker** :
 
 ```bash
 curl -fsSL https://get.docker.com | sh
@@ -179,7 +205,7 @@ sudo apt-get update && sudo apt-get install -y terraform
 sudo apt-get install -y ansible rsync sshpass
 ansible-galaxy collection install community.docker
 
-# Ajouter la clé SSH du serveur
+# Clé SSH du serveur
 ssh-keyscan -H 192.168.4.80 >> ~/.ssh/known_hosts
 ```
 
@@ -204,40 +230,27 @@ grafana_admin_password = "changeme"
 ### 2. Initialiser et déployer
 
 ```bash
-cd infra-deployment/
 terraform init
 terraform plan
 terraform apply
-```
-
-### 3. Vérifier les outputs
-
-```bash
-terraform output
-```
-
-```
-grafana           = "http://192.168.4.80:3000"
-portainer         = "http://192.168.4.80:9000"
-prometheus        = "http://192.168.4.80:9090"
-site_web          = "http://192.168.4.80:80"
 ```
 
 ---
 
 ## Déploiement — YKonnect (Ansible)
 
-YKonnect est déployé séparément via Ansible car il nécessite un `docker build` (image custom FastAPI).
-
-### 1. Configurer la clé API Groq
+### 1. Configurer les secrets
 
 Créer `ykonnect/.env` :
 
 ```env
 GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+JWT_SECRET=une-chaine-aleatoire-longue-et-secrete
+ADMIN_EMAIL=admin@ykonnect.fr
+ADMIN_PASSWORD=VotreMotDePasseAdmin
 ```
 
-> Obtenir une clé gratuite sur [console.groq.com](https://console.groq.com)
+> Clé Groq gratuite sur [console.groq.com](https://console.groq.com)
 
 ### 2. Lancer le playbook
 
@@ -247,14 +260,6 @@ ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini deploy-ykonnec
   -e "ansible_ssh_pass=VOTRE_MDP ansible_become_pass=VOTRE_MDP"
 ```
 
-Le playbook effectue les étapes suivantes :
-1. Installation de `python3-docker` sur le serveur
-2. Archivage local du projet (tar.gz, sans `.env`)
-3. Upload et extraction vers `/opt/ykonnect/` sur le serveur
-4. Déploiement du fichier `.env` (mode 0600)
-5. `docker compose up --build -d`
-6. Hot-reload de Prometheus (sans redémarrage)
-
 ### 3. Vérifier
 
 ```bash
@@ -262,15 +267,11 @@ curl http://192.168.4.80:8081/api/health
 # {"status":"ok"}
 ```
 
-YKonnect est accessible sur : `http://192.168.4.80:8081`
-
 ---
 
 ## Monitoring
 
 ### Prometheus
-
-Le fichier `monitoring/prometheus.yml` scrape les cibles suivantes :
 
 | Job | Cible | Métriques |
 |-----|-------|-----------|
@@ -279,66 +280,99 @@ Le fichier `monitoring/prometheus.yml` scrape les cibles suivantes :
 | `postgres_exporter` | postgres_exporter:9187 | Requêtes, connexions PostgreSQL |
 | `ykonnect` | ykonnect-backend-1:8000 | Requêtes HTTP, latences, erreurs |
 
-Recharger la config sans redémarrage :
-
 ```bash
-curl -X POST http://192.168.4.80:9090/-/reload
+make reload   # Recharger la config Prometheus sans redémarrage
 ```
 
 ### Grafana
 
 Accès : `http://192.168.4.80:3000` — Login : `admin` / (voir `terraform.tfvars`)
 
-Trois dashboards sont provisionnés automatiquement :
-- **Node Exporter** — métriques système du serveur
-- **PostgreSQL** — performance de la base de données
-- **YKonnect** — 6 panneaux (requêtes totales, taux d'erreurs 5xx, latences p50/p95, req/s)
-
-### Portainer
-
-Accès : `http://192.168.4.80:9000`  
-Permet de visualiser tous les stacks, consulter les logs en temps réel, et gérer les réseaux Docker.
+Dashboards provisionnés : Node Exporter, PostgreSQL, YKonnect (6 panneaux).
 
 ---
 
 ## YKonnect — Détails techniques
 
-### Chatbot IA
+### Design
 
-Le chatbot utilise l'API **Groq** avec le modèle `llama-3.3-70b-versatile`.  
-Le system prompt lui indique toutes les pages disponibles sur le site avec des liens HTML `<a>` préconstruits. Quand la question correspond à un sujet couvert, le bot redirige vers la page pertinente (5-8 lignes max).
+Interface neon/cyberpunk : fond `#030014`, violet `#a855f7`, cyan `#06b6d4`, glassmorphism.  
+Fonctionnalités JS : animation de frappe, compteurs animés (IntersectionObserver), barre de recherche live, menu hamburger mobile.
 
-**Pourquoi Groq ?**
-- Gratuit (quota généreux)
-- Très rapide (inférence GPU dédiée)
-- Pas besoin de RAM locale (contrairement à Ollama)
+### Chatbot IA flottant
 
-### Contenu éducatif
+- Modèle : `llama-3.3-70b-versatile` via Groq API
+- Streaming temps réel par **Server-Sent Events** (SSE)
+- Historique multi-tour (10 derniers échanges, sessionStorage)
+- Widget flottant présent sur toutes les pages
+- **8 avatars** au choix : 🤖 🦾 👾 🐧 🧠 🛸 ⚙️ 💻 (persisté en localStorage)
 
-**Procédures d'installation :**
-- VPN WireGuard (ChaCha20, peer-to-peer, kernel 5.6+)
-- Protection Fail2Ban (jails SSH/Nginx, filtres, iptables)
-- Load Balancer HAProxy (roundrobin, health checks, TLS)
+### Quiz d'évaluation CKA
 
-**Parcours CKA — Certified Kubernetes Administrator :**
-- Module 1 : Architecture & Composants (etcd, API Server, kubelet...)
-- Module 2 : Workloads & Scheduling (Pods, Deployments, DaemonSets, taints...)
-- Module 3 : Services & Networking (ClusterIP, Ingress, NetworkPolicy, CoreDNS...)
-- Module 4 : Sécurité (RBAC, ServiceAccounts, SecurityContext, Secrets...)
+Page `evaluation-cka.html` — 16 questions réparties en 4 catégories :
+- Linux / CLI, Docker / Containers, Réseau, Kubernetes
+- Réponses mélangées aléatoirement (Fisher-Yates)
+- Score : Débutant (0-5), Intermédiaire (6-9), Avancé (10-13), Expert (14-16)
+- Recommandations personnalisées par domaine faible
 
 ### Endpoints backend
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/api/chat` | Envoyer un message au chatbot |
-| GET | `/api/health` | Healthcheck |
-| GET | `/metrics` | Métriques Prometheus |
+| Méthode | Endpoint | Auth | Description |
+|---------|----------|------|-------------|
+| POST | `/api/chat/stream` | — | Chatbot SSE streaming |
+| GET | `/api/health` | — | Healthcheck |
+| GET | `/metrics` | — | Métriques Prometheus |
+| POST | `/api/auth/register` | — | Créer un compte utilisateur |
+| POST | `/api/auth/login` | — | Connexion utilisateur (retourne JWT) |
+| POST | `/api/auth/admin/login` | — | Connexion admin (retourne JWT admin) |
+| GET | `/api/tickets` | JWT user | Lister ses tickets |
+| POST | `/api/tickets` | JWT user | Soumettre un ticket |
+| GET | `/api/admin/tickets` | JWT admin | Tous les tickets |
+| PATCH | `/api/admin/tickets/{id}/status` | JWT admin | Modifier le statut |
+
+---
+
+## Comptes utilisateurs et tickets
+
+### Utilisateurs
+
+Les utilisateurs créent un compte via la modale "Créer un compte" dans la navbar (toutes les pages).  
+Le JWT est stocké en `localStorage` et valide 7 jours.
+
+### Tickets d'infrastructure
+
+Les utilisateurs connectés soumettent des demandes depuis `tickets.html` :
+- Champs : titre, organisation, type de demande, priorité, description
+- Statuts : `ouvert` → `en_cours` → `résolu`
+- Données persistées en SQLite (`/app/data/ykonnect.db` dans le volume Docker)
+
+### Panneau admin
+
+Accès **direct** via : `http://192.168.4.80:8081/admin.html`
+
+> ⚠️ Cette page est indépendante de la navbar. Ne pas utiliser le bouton "Connexion" des autres pages — il est réservé aux comptes utilisateurs.
+
+Identifiants définis dans `ykonnect/.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).  
+Fonctionnalités : liste de tous les tickets, filtres par statut, avancement du statut en un clic.
 
 ---
 
 ## Opérations courantes
 
-**Redéployer YKonnect après modification :**
+**Redémarrer le stack local :**
+
+```bash
+make restart
+```
+
+**Voir les logs du backend :**
+
+```bash
+make logs-local           # backend par défaut
+make logs-local S=nginx   # frontend nginx
+```
+
+**Redéployer après modification (Ansible) :**
 
 ```bash
 cd ansible/
@@ -346,22 +380,10 @@ ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini deploy-ykonnec
   -e "ansible_ssh_pass=VOTRE_MDP ansible_become_pass=VOTRE_MDP"
 ```
 
-**Voir les logs du chatbot :**
+**Accéder à la base SQLite :**
 
 ```bash
-ssh hau@192.168.4.80 "docker logs -f ykonnect-backend-1"
-```
-
-**Redémarrer un service :**
-
-```bash
-ssh hau@192.168.4.80 "docker restart grafana"
-```
-
-**Détruire l'infrastructure principale :**
-
-```bash
-terraform destroy
+sudo docker exec -it ykonnect-backend-1 sqlite3 /app/data/ykonnect.db ".tables"
 ```
 
 ---
@@ -371,8 +393,11 @@ terraform destroy
 | Point | Détail |
 |-------|--------|
 | `terraform.tfvars` | Ne jamais commiter — déjà dans `.gitignore` |
-| `ykonnect/.env` | Ne jamais commiter — déjà dans `ykonnect/.gitignore` |
+| `ykonnect/.env` | Ne jamais commiter — contient JWT_SECRET et mot de passe admin |
+| `JWT_SECRET` | Changer impérativement en production |
+| `ADMIN_PASSWORD` | Ne pas utiliser le même mot de passe qu'un compte utilisateur normal |
 | Docker TCP sans TLS | Valable uniquement en réseau interne isolé |
 | Port 8080 réservé | Un autre service utilise le port 8080 — YKonnect est sur 8081 |
-| `chat.js` — encodage | Le fichier doit rester en ASCII pur / Unix (LF). Ne pas éditer avec un éditeur Windows |
-| Prometheus hot-reload | Toujours utiliser `POST /-/reload` plutôt que `docker restart prometheus` pour éviter la perte de métriques |
+| Prometheus hot-reload | Toujours utiliser `POST /-/reload` plutôt que `docker restart prometheus` |
+| SSE / nginx | `proxy_buffering off` requis dans nginx.conf pour le streaming chatbot |
+| bcrypt | `requirements.txt` fixé à `bcrypt==4.2.1` (incompatibilité passlib avec bcrypt 5.x) |
