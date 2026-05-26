@@ -5,6 +5,38 @@ Stack : **Terraform** (infra principale) + **Ansible** (déploiement YKonnect) +
 
 ---
 
+## Installation rapide
+
+```bash
+# Cloner le dépôt
+git clone https://github.com/hauteha/YKONNECT_PROJECT.git
+cd YKONNECT_PROJECT
+
+# Configurer les secrets (voir section Prérequis)
+cp terraform.tfvars.example terraform.tfvars  # puis éditer
+echo "GROQ_API_KEY=gsk_..." > ykonnect/.env
+
+# Déployer toute l'infrastructure en une commande
+make install
+
+# Ou avec un mot de passe SSH différent
+SSH_PASS=monmotdepasse make install
+```
+
+Commandes disponibles :
+
+| Commande | Description |
+|----------|-------------|
+| `make install` | Déployer toute l'infrastructure (Terraform + Ansible) |
+| `make terraform` | Déployer uniquement l'infra principale |
+| `make ykonnect` | Déployer uniquement YKonnect |
+| `make status` | Voir les conteneurs actifs sur le serveur |
+| `make logs` | Suivre les logs d'un conteneur (`SERVICE=grafana`) |
+| `make reload` | Recharger la config Prometheus sans redémarrage |
+| `make destroy` | Supprimer l'infrastructure principale |
+
+---
+
 ## Sommaire
 
 - [Architecture globale](#architecture-globale)

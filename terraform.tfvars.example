@@ -1,0 +1,5 @@
+server_ip              = "192.168.4.80"
+postgres_user          = "admin"
+postgres_password      = "changeme"
+postgres_db            = "appdb"
+grafana_admin_password = "changeme"
