@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'Infrastructure Dashboards'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      # On pointe vers le sous-dossier /json à l'intérieur du container
+      path: /etc/grafana/provisioning/dashboards/json

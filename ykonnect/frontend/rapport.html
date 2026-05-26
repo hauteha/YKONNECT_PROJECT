@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rapport technique — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>dbranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thematiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">A propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.print()">Imprimer</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb"><a href="index.html">Accueil</a> &rsaquo; Rapport technique</div>
+    <h1 class="page-header-title">Rapport technique &mdash; Infrastructure YKonnect</h1>
+    <p class="page-header-subtitle">Documentation de l'architecture deployee, des choix techniques et du processus de mise en place.</p>
+    <p class="page-header-meta">Version 1.0 &middot; Date : 26 mai 2026 &middot; Auteur : YKonnect</p>
+  </section>
+
+  <!-- SOMMAIRE -->
+  <div class="card article-body" style="margin-bottom:18px;">
+    <h2>Sommaire</h2>
+    <ol>
+      <li><a href="#contexte" style="color:var(--accent);">Contexte et objectifs</a></li>
+      <li><a href="#infra-existante" style="color:var(--accent);">Infrastructure existante</a></li>
+      <li><a href="#ykonnect" style="color:var(--accent);">Architecture YKonnect</a></li>
+      <li><a href="#chatbot" style="color:var(--accent);">Chatbot IA (Groq / Llama 3.3)</a></li>
+      <li><a href="#monitoring" style="color:var(--accent);">Integration monitoring</a></li>
+      <li><a href="#deploiement" style="color:var(--accent);">Deploiement Ansible</a></li>
+      <li><a href="#contenu" style="color:var(--accent);">Contenu pedagogique</a></li>
+      <li><a href="#faq" style="color:var(--accent);">FAQ &mdash; Problemes rencontres</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. CONTEXTE -->
+  <div id="contexte" class="card article-body" style="margin-bottom:18px;">
+    <h2>1. Contexte et objectifs</h2>
+    <p>Le projet YKonnect est un <strong>hub d'articles IT et d'infrastructure</strong> destine aux etudiants en master systeme et reseau. Il s'inspire du site IT-Connect et propose :</p>
+    <ul>
+      <li>Des <strong>procedures techniques</strong> detaillees (VPN, securite, load balancing)</li>
+      <li>Des <strong>cours de preparation a la certification CKA</strong> (Certified Kubernetes Administrator)</li>
+      <li>Un <strong>chatbot IA</strong> connecte, capable de rediriger vers les ressources internes du site</li>
+    </ul>
+    <p>L'ensemble est deploye sur un serveur on-premise <strong>192.168.4.80</strong> via Docker et Ansible, et supervise par Prometheus et Grafana.</p>
+  </div>
+
+  <!-- 2. INFRA EXISTANTE -->
+  <div id="infra-existante" class="card article-body" style="margin-bottom:18px;">
+    <h2>2. Infrastructure existante (avant YKonnect)</h2>
+    <p>L'infrastructure on-premise etait deja deployee via <strong>Terraform</strong> avec les services suivants :</p>
+    <div class="code-block">Serveur : 192.168.4.80
+Orchestration : Docker (provider kreuzwerker/docker)
+Reseau Docker : app_network
+
+Services deployes :
+  - nginx          (port 80)    : page d'accueil avec liens vers les outils
+  - postgres       (interne)    : base de donnees PostgreSQL 15
+  - postgres_exporter (9187)   : metriques PostgreSQL pour Prometheus
+  - node_exporter  (9100)       : metriques systeme Linux
+  - prometheus     (9090)       : collecte et stockage des metriques
+  - grafana        (3001)       : dashboards de supervision
+  - portainer      (9000/9443)  : gestion visuelle Docker</div>
+
+    <h3>Page d'accueil d'infrastructure (port 80)</h3>
+    <p>Une page HTML simple redirige vers les trois outils de supervision via des boutons. Un bouton <strong>YKonnect Website</strong> a ete ajoute pointant vers le port 8081.</p>
+  </div>
+
+  <!-- 3. ARCHITECTURE YKONNECT -->
+  <div id="ykonnect" class="card article-body" style="margin-bottom:18px;">
+    <h2>3. Architecture YKonnect</h2>
+
+    <h3>Vue d'ensemble</h3>
+    <div class="code-block">192.168.4.80:8081
+        |
+        v
+[nginx:alpine]  &lt;-- frontend container
+    /           --> fichiers statiques HTML/CSS/JS
+    /api/        --> proxy_pass vers backend:8000
+        |
+        v
+[FastAPI + Python 3.12]  &lt;-- backend container
+    POST /api/chat   --> appel API Groq
+    GET  /api/health --> healthcheck
+    GET  /metrics    --> Prometheus scrape
+
+Reseaux Docker :
+  ykonnect_net  : frontend &lt;-> backend (interne)
+  app_network   : backend &lt;-> Prometheus (supervision)</div>
+
+    <h3>Fichiers du projet</h3>
+    <div class="code-block">/opt/ykonnect/                    (sur le serveur)
+  frontend/                        : site statique
+    index.html                     : page d'accueil + chatbot
+    articles.html                  : liste des articles
+    wireguard.html                 : procedure WireGuard
+    fail2ban.html                  : procedure Fail2Ban
+    haproxy.html                   : procedure HAProxy
+    certifications.html            : parcours CKA
+    cka-archi.html                 : module 1 - Architecture
+    cka-workloads.html             : module 2 - Workloads
+    cka-networking.html            : module 3 - Networking
+    cka-securite.html              : module 4 - Securite
+    assets/css/styles.css          : styles globaux
+    assets/js/chat.js              : logique chatbot
+    assets/js/auth.js              : hooks connexion/inscription
+  backend/
+    main.py                        : FastAPI + Groq
+    requirements.txt               : dependances Python
+    Dockerfile                     : image Python 3.12-slim
+  nginx/nginx.conf                 : config reverse proxy
+  docker-compose.yml               : orchestration des containers
+  .env                             : cle API Groq (confidentiel)</div>
+
+    <h3>Docker Compose</h3>
+    <div class="code-block">services:
+  backend:
+    build: ./backend
+    environment: [GROQ_API_KEY]
+    networks: [ykonnect_net, app_network]
+
+  frontend:
+    image: nginx:alpine
+    ports: ["8081:80"]
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [ykonnect_net]
+
+networks:
+  ykonnect_net:            # reseau interne
+  app_network: external    # reseau partage avec Prometheus</div>
+  </div>
+
+  <!-- 4. CHATBOT -->
+  <div id="chatbot" class="card article-body" style="margin-bottom:18px;">
+    <h2>4. Chatbot IA (Groq / Llama 3.3)</h2>
+
+    <h3>Choix technologique</h3>
+    <p>Plusieurs options ont ete evaluees :</p>
+    <ul>
+      <li><strong>Ollama (local)</strong> : gratuit mais necessite min. 4 GB de RAM libre &mdash; impossible vu la RAM disponible (~1.2 GB libre)</li>
+      <li><strong>Claude API (Anthropic)</strong> : payant (~$0.80/million tokens pour Haiku)</li>
+      <li><strong>Groq API (retenu)</strong> : gratuit (1000 req/jour), modele Llama 3.3 70B, tres rapide</li>
+    </ul>
+
+    <h3>Backend FastAPI</h3>
+    <div class="code-block">Endpoint : POST /api/chat
+Modele   : llama-3.3-70b-versatile
+Tokens   : max 512 en sortie, temperature 0.6
+Prompt   : system prompt connait les pages du site
+           et inclut des liens HTML dans les reponses</div>
+
+    <h3>Comportement du chatbot</h3>
+    <p>Le prompt systeme instruit le modele de :</p>
+    <ul>
+      <li>Repondre en francais, de facon concise (5-8 lignes max)</li>
+      <li>Inclure des <strong>liens HTML cliquables</strong> vers les pages internes quand le sujet correspond</li>
+      <li>Rester dans le domaine IT/infrastructure</li>
+    </ul>
+
+    <h3>Metriques Prometheus</h3>
+    <p>La librairie <code>prometheus-fastapi-instrumentator</code> expose automatiquement :</p>
+    <ul>
+      <li>Nombre de requetes par code HTTP</li>
+      <li>Latence des requetes (histogramme p50/p95/p99)</li>
+      <li>Requetes en cours</li>
+    </ul>
+  </div>
+
+  <!-- 5. MONITORING -->
+  <div id="monitoring" class="card article-body" style="margin-bottom:18px;">
+    <h2>5. Integration monitoring</h2>
+
+    <h3>Prometheus</h3>
+    <p>Ajout d'un job de scrape dans <code>prometheus.yml</code> :</p>
+    <div class="code-block">- job_name: 'ykonnect'
+  static_configs:
+    - targets: ['ykonnect-backend-1:8000']
+  metrics_path: /metrics</div>
+    <p>Le container backend est sur <code>app_network</code> (reseau partage avec Prometheus), ce qui permet la resolution DNS par nom de container.</p>
+
+    <h3>Grafana</h3>
+    <p>Dashboard <strong>"YKonnect - Chatbot"</strong> provisionne automatiquement avec 6 panels :</p>
+    <ul>
+      <li>Requetes totales (stat)</li>
+      <li>Taux d'erreurs 5xx (stat, alerte rouge si &gt; 0.1/s)</li>
+      <li>Latence p50 et p95 (stat)</li>
+      <li>Requetes/s par code HTTP (timeseries)</li>
+      <li>Latence p50/p95/p99 dans le temps (timeseries)</li>
+    </ul>
+
+    <h3>Portainer</h3>
+    <p>Les containers <code>ykonnect-frontend-1</code> et <code>ykonnect-backend-1</code> sont visibles et gérables via l'interface Portainer sur le port 9000.</p>
+  </div>
+
+  <!-- 6. DEPLOIEMENT -->
+  <div id="deploiement" class="card article-body" style="margin-bottom:18px;">
+    <h2>6. Deploiement Ansible</h2>
+
+    <h3>Inventaire</h3>
+    <div class="code-block">[ykonnect]
+192.168.4.80 ansible_user=hau</div>
+
+    <h3>Playbook deploy-ykonnect.yml</h3>
+    <p>Le playbook effectue les operations suivantes dans l'ordre :</p>
+    <ol>
+      <li>Installation de <code>python3-docker</code> (SDK Ansible pour Docker)</li>
+      <li>Verification que Docker est demarre</li>
+      <li>Creation du repertoire <code>/opt/ykonnect/</code></li>
+      <li>Archive locale du projet (tar.gz), excluant le fichier <code>.env</code></li>
+      <li>Upload de l'archive et extraction sur le serveur</li>
+      <li>Deploiement du fichier <code>.env</code> (cle Groq, mode 600)</li>
+      <li>Copie du <code>prometheus.yml</code> mis a jour</li>
+      <li>Build et demarrage des containers via <code>docker compose up</code></li>
+      <li>Rechargement de la configuration Prometheus (hot reload via HTTP POST)</li>
+    </ol>
+
+    <h3>Commande de deploiement</h3>
+    <div class="code-block">cd /home/hau/infra-deployment/ansible
+GROQ_API_KEY=&lt;cle&gt; ansible-playbook -i inventory.ini deploy-ykonnect.yml</div>
+
+    <div class="tip-box">Le hot reload Prometheus (<code>/-/reload</code>) necessite que le flag <code>--web.enable-lifecycle</code> soit actif dans la commande de demarrage du container, ce qui est le cas dans la config Terraform.</div>
+  </div>
+
+  <!-- 7. CONTENU -->
+  <div id="contenu" class="card article-body" style="margin-bottom:18px;">
+    <h2>7. Contenu pedagogique</h2>
+
+    <h3>Procedures d'installation (3)</h3>
+    <ul>
+      <li><strong>WireGuard VPN</strong> : generation de cles, config serveur/client Linux, pare-feu, roaming, debug</li>
+      <li><strong>Fail2Ban</strong> : jails SSH et Nginx, filtres personnalises, gestion des bans, monitoring</li>
+      <li><strong>HAProxy</strong> : load balancing HTTP, algorithmes, health checks, terminaison TLS, routage multi-site</li>
+    </ul>
+
+    <h3>Parcours CKA &mdash; 4 modules (sur 6)</h3>
+    <ul>
+      <li><strong>Module 1 &mdash; Architecture</strong> : etcd, API Server, Scheduler, Controller Manager, kubelet, kube-proxy</li>
+      <li><strong>Module 2 &mdash; Workloads</strong> : Pod, Deployment, DaemonSet, Job, CronJob, taints/tolerations, affinites</li>
+      <li><strong>Module 3 &mdash; Networking</strong> : ClusterIP, NodePort, LoadBalancer, Ingress, NetworkPolicy, CoreDNS</li>
+      <li><strong>Module 4 &mdash; Securite</strong> : RBAC, Role, ClusterRole, ServiceAccount, SecurityContext, Secrets</li>
+    </ul>
+    <p>Modules prevus : Storage (PV/PVC/StorageClass) et Maintenance/Troubleshooting (kubeadm upgrade, etcd backup).</p>
+  </div>
+
+  <!-- 8. FAQ -->
+  <div id="faq" class="card article-body" style="margin-bottom:18px;">
+    <h2>8. FAQ &mdash; Problemes rencontres et solutions</h2>
+
+    <h3>P1 &mdash; Port 8080 deja utilise</h3>
+    <p><strong>Symptome :</strong> Le site vitrine tourne deja sur le port 8080.</p>
+    <p><strong>Solution :</strong> Changement du port expose dans <code>docker-compose.yml</code> de 8080 vers <strong>8081</strong>.</p>
+    <div class="code-block">ports:
+  - "8081:80"   # 8080 deja pris</div>
+
+    <h3>P2 &mdash; Ansible et rsync non installes</h3>
+    <p><strong>Symptome :</strong> <code>command not found: ansible</code></p>
+    <p><strong>Solution :</strong></p>
+    <div class="code-block">sudo apt-get install -y ansible rsync sshpass</div>
+
+    <h3>P3 &mdash; SSH : Host key verification failed</h3>
+    <p><strong>Symptome :</strong> Ansible ne peut pas se connecter au serveur.</p>
+    <p><strong>Solution :</strong> Ajouter la cle publique du serveur dans known_hosts :</p>
+    <div class="code-block">mkdir -p ~/.ssh && ssh-keyscan -H 192.168.4.80 >> ~/.ssh/known_hosts</div>
+
+    <h3>P4 &mdash; Collection community.docker manquante</h3>
+    <p><strong>Symptome :</strong> <code>couldn't resolve module/action 'community.docker.docker_compose_v2'</code></p>
+    <p><strong>Solution :</strong></p>
+    <div class="code-block">ansible-galaxy collection install community.docker</div>
+
+    <h3>P5 &mdash; Conflit docker.io / containerd.io</h3>
+    <p><strong>Symptome :</strong> <code>containerd.io : Conflicts: containerd / runc</code> lors de l'installation via apt.</p>
+    <p><strong>Cause :</strong> Docker etait deja installe via le depot officiel Docker (non le paquet Debian <code>docker.io</code>).</p>
+    <p><strong>Solution :</strong> Suppression de <code>docker.io</code> et <code>docker-compose-plugin</code> du playbook. On installe uniquement <code>python3-docker</code> (SDK Ansible).</p>
+
+    <h3>P6 &mdash; Module synchronize echoue (sudo rsync sans TTY)</h3>
+    <p><strong>Symptome :</strong> <code>sudo: un terminal est requis pour lire le mot de passe</code></p>
+    <p><strong>Cause :</strong> Le module Ansible <code>synchronize</code> tente d'executer <code>sudo rsync</code> sur la machine distante, ce qui necessite un TTY interactif.</p>
+    <p><strong>Solution :</strong> Remplacement par la combinaison <code>archive</code> (local) + <code>copy</code> (upload) + <code>unarchive</code> (extraction distante).</p>
+
+    <h3>P7 &mdash; Prometheus ne scrape pas le backend YKonnect</h3>
+    <p><strong>Symptome :</strong> Le job <code>ykonnect</code> n'apparait pas dans les targets actives meme apres hot reload.</p>
+    <p><strong>Cause :</strong> Le container Prometheus avait charge une ancienne version du fichier de config avant le redemarrage (probleme d'inode Docker avec le bind mount).</p>
+    <p><strong>Solution :</strong> Redemarrage complet du container Prometheus :</p>
+    <div class="code-block">docker restart prometheus</div>
+
+    <h3>P8 &mdash; chat.js : SyntaxError Invalid or unexpected token</h3>
+    <p><strong>Symptome :</strong> <code>Uncaught SyntaxError: Invalid or unexpected token (at chat.js:20:44)</code></p>
+    <p><strong>Cause :</strong> Le fichier JS contenait des <strong>guillemets typographiques</strong> (curly quotes : <code>" "</code> U+201C/U+201D) au lieu de guillemets droits ASCII (<code>"</code>), introduits lors de l'edition. Le fichier avait aussi des fins de ligne Windows (<code>\r\n</code>) qui ont declenche l'erreur sur certains navigateurs.</p>
+    <p><strong>Solution :</strong> Reecriture complete du fichier en <strong>ASCII pur</strong>, sans template literals ni caracteres Unicode, verifiee avec <code>cat -A</code> (absence de <code>^M</code>).</p>
+    <div class="code-block"># Verifier l'encodage d'un fichier JS
+file chat.js         # doit indiquer "ASCII text"
+cat -A chat.js | head -5   # pas de ^M en fin de ligne</div>
+
+    <h3>P9 &mdash; Chatbot confus avec le message "demo front"</h3>
+    <p><strong>Symptome :</strong> L'utilisateur pensait que le chatbot etait simule car le message d'accueil disait "demo front".</p>
+    <p><strong>Solution :</strong> Mise a jour du message d'accueil dans <code>index.html</code> :</p>
+    <div class="code-block">Bonjour ! Je suis le chatbot de YKonnect, propulse par Llama 3.3 (Groq).
+Pose-moi une question sur Linux, reseau, securite, Docker, Kubernetes...</div>
+
+    <h3>P10 &mdash; Chatbot donnait de trop longues reponses textuelles</h3>
+    <p><strong>Symptome :</strong> Pour une question sur Kubernetes, le bot repondait avec de longues listes sans proposer les pages du site.</p>
+    <p><strong>Solution :</strong> Mise a jour du prompt systeme pour :</p>
+    <ul>
+      <li>Limiter les reponses a 5-8 lignes</li>
+      <li>Connaitre toutes les pages du site et inclure des <code>&lt;a href&gt;</code> HTML cliquables</li>
+      <li>Rediriger vers les ressources internes en priorite</li>
+    </ul>
+  </div>
+
+  <div class="card" style="text-align:center; color:var(--text-soft); font-size:12px;">
+    Rapport genere le 26 mai 2026 &middot; YKonnect Infrastructure On-Prem &middot; 192.168.4.80
+  </div>
+
+</div>
+</body>
+</html>

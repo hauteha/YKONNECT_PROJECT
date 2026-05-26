@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>YKonnect — débranche moi si tu peux</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="YKonnect - Articles IT & chatbot connecté à une base de connaissances." />
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="page">
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text">
+        <span>YKonnect</span>
+        <span>débranche moi si tu peux</span>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a href="index.html" class="nav-active">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="btn btn-outline-primary" id="btnLogin">
+        🔑 Connexion
+      </button>
+      <button class="btn btn-primary" id="btnRegister">
+        ✨ Créer un compte
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO / INTRO -->
+  <section class="page-header">
+    <h1 class="page-header-title">
+      Hub d’articles <span style="color:#26c6da;">IT & infra</span> + chatbot connecté.
+    </h1>
+    <p class="page-header-subtitle">
+      YKonnect s’inspire d’IT-Connect : centralisation d’articles techniques (système, réseau, sécurité,
+      cloud, DevOps) et assistant intelligent qui commence par interroger la BDD avant de compléter avec le web.
+    </p>
+    <p class="page-header-meta">
+      Les articles seront stockés en base (ex : PostgreSQL) et indexés pour la recherche. Le chatbot exploitera
+      cette BDD en priorité, puis basculera sur une recherche web si nécessaire.
+    </p>
+    <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">
+      <span class="chip">Administration & infrastructure sécurisée</span>
+      <span class="chip">Guides & pas-à-pas</span>
+      <span class="chip">Chatbot branché sur la BDD</span>
+    </div>
+  </section>
+
+  <!-- CONTENU PRINCIPAL : APERCU ARTICLES + CHATBOT -->
+  <main class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+
+    <!-- Aperçu des articles -->
+    <section>
+      <h2 class="section-title">Aperçu des articles</h2>
+      <div class="card" style="margin-bottom:14px;">
+        <p class="text-soft">
+          Voici quelques articles de démonstration. À terme, cette liste sera remplie
+          dynamiquement à partir de la base de données, avec pagination et filtres.
+        </p>
+        <div style="margin-top:10px;">
+          <button class="btn btn-ghost" onclick="window.location='articles.html'">
+            📚 Voir tous les articles
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <article class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="chip">Réseau</span><span class="chip">Sécurité</span>
+            <span class="badge">Intermédiaire · 25 min</span>
+          </div>
+          <h3 style="font-size:15px; margin-bottom:4px;">
+            <a href="wireguard.html">VPN WireGuard — mise en place complète</a>
+          </h3>
+          <p class="text-soft">Déployer un VPN moderne entre Linux : clés, config serveur/client, pare-feu, roaming.</p>
+        </article>
+
+        <article class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="chip">Sécurité</span>
+            <span class="badge">Débutant · 20 min</span>
+          </div>
+          <h3 style="font-size:15px; margin-bottom:4px;">
+            <a href="fail2ban.html">Protéger ses services avec Fail2Ban</a>
+          </h3>
+          <p class="text-soft">Bloquer les IP malveillantes automatiquement. Jails SSH, Nginx, filtres personnalisés.</p>
+        </article>
+
+        <article class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="chip">Réseau</span><span class="chip">Cloud</span>
+            <span class="badge">Intermédiaire · 30 min</span>
+          </div>
+          <h3 style="font-size:15px; margin-bottom:4px;">
+            <a href="haproxy.html">HAProxy — load balancer & reverse proxy</a>
+          </h3>
+          <p class="text-soft">Répartition de charge HTTP, health checks, terminaison TLS, routage multi-site.</p>
+        </article>
+
+        <article class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="chip">CKA</span>
+            <span class="badge">6 modules · ~12h</span>
+          </div>
+          <h3 style="font-size:15px; margin-bottom:4px;">
+            <a href="certifications.html">Parcours CKA — Kubernetes Administrator</a>
+          </h3>
+          <p class="text-soft">4 modules disponibles : architecture, workloads, networking, sécurité RBAC.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Chatbot -->
+    <aside id="chat">
+      <h2 class="section-title">Chatbot YKonnect</h2>
+      <div class="card">
+        <p class="text-soft" style="margin-bottom:8px;">
+          Pose une question IT. Dans la version finale, le bot interrogera d’abord la base d’articles YKonnect.
+          Si aucune réponse pertinente n’est trouvée, il complétera avec une recherche sur le web.
+        </p>
+
+        <div id="chatMessages" style="
+          border-radius:12px;
+          border:1px solid rgba(51,65,85,0.95);
+          background:rgba(15,23,42,0.98);
+          padding:8px 9px;
+          min-height:140px;
+          max-height:260px;
+          overflow-y:auto;
+          font-size:13px;
+          margin-bottom:8px;
+        ">
+          <div style="margin-bottom:6px;">
+            <strong>Bot :</strong>
+            <span class="text-soft">
+              Bonjour 👋 Je suis le chatbot de YKonnect, propulsé par Llama 3.3 (Groq).
+              Pose-moi une question sur Linux, réseau, sécurité, Docker, Kubernetes ou toute autre thématique IT !
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <input
+            id="chatInput"
+            class="input"
+            type="text"
+            placeholder="Ex : Comment sécuriser SSH sur un serveur de prod ?"
+          />
+          <button id="chatSend" class="btn btn-primary" type="button">Envoyer</button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+          <button class="btn btn-ghost chat-suggest" type="button">
+            Comment configurer WireGuard ?
+          </button>
+          <button class="btn btn-ghost chat-suggest" type="button">
+            Checklist de hardening Linux
+          </button>
+          <button class="btn btn-ghost chat-suggest" type="button">
+            Différence RBAC Role et ClusterRole ?
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<!-- JS modules -->
+<script src="assets/js/main.js"></script>
+<script src="assets/js/chat.js"></script>
+<script src="assets/js/auth.js"></script>
+</body>
+</html>

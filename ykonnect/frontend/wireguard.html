@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>WireGuard VPN — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html" class="nav-active">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="articles.html">Articles</a> › WireGuard VPN
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div>
+        <h1 class="page-header-title">Mise en place d'un VPN WireGuard</h1>
+        <p class="page-header-subtitle">Déployer un VPN moderne, rapide et sécurisé entre un serveur Linux et des clients.</p>
+        <p class="page-header-meta">
+          Catégorie : <span class="chip">Réseau</span> <span class="chip">Sécurité</span>
+          · Niveau : <span class="badge">Intermédiaire · 25 min</span>
+          · Mise à jour : 2026-05-01
+        </p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='articles.html'">← Retour</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Pourquoi WireGuard ?</h2>
+      <p>WireGuard est un protocole VPN moderne intégré au noyau Linux depuis la version 5.6. Comparé à OpenVPN ou IPsec, il offre :</p>
+      <ul>
+        <li><strong>Performances élevées</strong> — chiffrement ChaCha20-Poly1305 optimisé</li>
+        <li><strong>Surface d'attaque réduite</strong> — ~4 000 lignes de code contre ~400 000 pour OpenVPN</li>
+        <li><strong>Configuration simple</strong> — paires de clés publique/privée, pas de CA</li>
+        <li><strong>Roaming transparent</strong> — le client change d'IP sans couper le tunnel</li>
+      </ul>
+
+      <h2>Architecture cible</h2>
+      <p>Un serveur (peer A) expose le VPN, un ou plusieurs clients (peer B, C…) s'y connectent. Tous les peers sont équivalents dans WireGuard — c'est une logique <em>point-à-point</em>.</p>
+      <div class="code-block">Internet
+  │
+  ▼
+[Serveur WireGuard] 192.168.4.80
+  wg0 : 10.8.0.1/24
+  ├── Peer Client1  → 10.8.0.2/32
+  └── Peer Client2  → 10.8.0.3/32</div>
+
+      <h2>1. Installation</h2>
+      <p>Sur Debian/Ubuntu (serveur et clients) :</p>
+      <div class="code-block">sudo apt update && sudo apt install -y wireguard</div>
+      <p>Sur Fedora/RHEL :</p>
+      <div class="code-block">sudo dnf install wireguard-tools</div>
+
+      <h2>2. Génération des clés</h2>
+      <p>Pour chaque peer (serveur + chaque client), générer une paire de clés :</p>
+      <div class="code-block"># Générer la clé privée
+wg genkey | tee /etc/wireguard/privatekey | wg pubkey > /etc/wireguard/publickey
+
+# Restreindre les permissions
+chmod 600 /etc/wireguard/privatekey
+
+# Afficher les clés
+cat /etc/wireguard/privatekey
+cat /etc/wireguard/publickey</div>
+      <div class="tip-box">💡 La clé privée ne quitte <strong>jamais</strong> la machine. Seule la clé publique est partagée.</div>
+
+      <h2>3. Configuration du serveur</h2>
+      <p>Créer <span class="code-inline">/etc/wireguard/wg0.conf</span> :</p>
+      <div class="code-block">[Interface]
+Address = 10.8.0.1/24
+ListenPort = 51820
+PrivateKey = &lt;CLEE_PRIVEE_SERVEUR&gt;
+
+# Activation du routage IP
+PostUp   = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+# ── Peer : Client1 ──────────────────────────────
+[Peer]
+PublicKey = &lt;CLEE_PUBLIQUE_CLIENT1&gt;
+AllowedIPs = 10.8.0.2/32</div>
+
+      <h2>4. Activation du routage IP</h2>
+      <div class="code-block"># Activer le forwarding (persistant)
+echo "net.ipv4.ip_forward = 1" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p</div>
+
+      <h2>5. Démarrage et activation du service</h2>
+      <div class="code-block"># Démarrer l'interface
+sudo wg-quick up wg0
+
+# Activer au démarrage
+sudo systemctl enable wg-quick@wg0
+
+# Vérifier l'état
+sudo wg show</div>
+
+      <h2>6. Ouverture du pare-feu</h2>
+      <div class="code-block"># UFW
+sudo ufw allow 51820/udp
+sudo ufw reload
+
+# iptables direct
+sudo iptables -A INPUT -p udp --dport 51820 -j ACCEPT</div>
+
+      <h2>7. Configuration d'un client Linux</h2>
+      <p>Sur la machine client, créer <span class="code-inline">/etc/wireguard/wg0.conf</span> :</p>
+      <div class="code-block">[Interface]
+Address = 10.8.0.2/24
+PrivateKey = &lt;CLEE_PRIVEE_CLIENT&gt;
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = &lt;CLEE_PUBLIQUE_SERVEUR&gt;
+Endpoint = 192.168.4.80:51820
+AllowedIPs = 0.0.0.0/0   # Tout le trafic passe par le VPN
+PersistentKeepalive = 25</div>
+      <div class="code-block">sudo wg-quick up wg0</div>
+      <div class="tip-box">💡 <strong>AllowedIPs = 0.0.0.0/0</strong> → full tunnel (tout le trafic passe par le VPN).<br>
+      <strong>AllowedIPs = 10.8.0.0/24</strong> → split tunnel (seulement le réseau VPN).</div>
+
+      <h2>8. Configuration d'un client Windows / macOS</h2>
+      <p>Télécharger le client WireGuard officiel, puis importer le fichier <span class="code-inline">wg0.conf</span> généré ci-dessus via l'interface graphique. Le format est identique.</p>
+
+      <h2>9. Vérification</h2>
+      <div class="code-block"># Sur le serveur — voir les peers connectés et le trafic
+sudo wg show
+
+# Ping depuis le client vers le serveur (adresse VPN)
+ping 10.8.0.1
+
+# Vérifier l'IP publique vue depuis le client
+curl ifconfig.me</div>
+
+      <h2>10. Ajouter un deuxième client</h2>
+      <p>Générer les clés sur le client2, puis ajouter un bloc <span class="code-inline">[Peer]</span> dans le conf serveur :</p>
+      <div class="code-block">[Peer]
+PublicKey = &lt;CLEE_PUBLIQUE_CLIENT2&gt;
+AllowedIPs = 10.8.0.3/32</div>
+      <div class="code-block"># Recharger à chaud sans couper les sessions existantes
+sudo wg addconf wg0 /etc/wireguard/wg0.conf</div>
+
+      <h2>Dépannage</h2>
+      <ul>
+        <li>Vérifier les règles iptables : <span class="code-inline">sudo iptables -L -n -v</span></li>
+        <li>Logs du service : <span class="code-inline">sudo journalctl -u wg-quick@wg0 -f</span></li>
+        <li>Tester le port UDP : <span class="code-inline">nc -zvu 192.168.4.80 51820</span></li>
+        <li>S'assurer que <span class="code-inline">ip_forward</span> est bien à 1 : <span class="code-inline">cat /proc/sys/net/ipv4/ip_forward</span></li>
+      </ul>
+
+      <div class="warn-box">⚠️ Ne jamais exposer le fichier <span class="code-inline">privatekey</span> — traiter comme un secret (vault, variable d'env).</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Métadonnées</h3>
+        <p class="text-soft">
+          <strong>Auteur :</strong> YKonnect<br>
+          <strong>Mots-clés :</strong> WireGuard, VPN, tunnel, ChaCha20, peer-to-peer<br>
+          <strong>OS :</strong> Debian 12, Ubuntu 22.04+
+        </p>
+        <hr style="border:none; border-top:1px solid var(--border-subtle); margin:12px 0;">
+        <h3 class="section-title">Prérequis</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li>Linux kernel ≥ 5.6</li>
+          <li>Accès root / sudo</li>
+          <li>Port UDP 51820 ouvert en entrée</li>
+          <li>IP publique ou routage vers le serveur</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Demander au chatbot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Des questions sur WireGuard ? Le bot peut t'aider.</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Ouvrir le chatbot</button>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Articles liés</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li><a href="haproxy.html" style="color:var(--accent)">Mise en place HAProxy</a></li>
+          <li><a href="fail2ban.html" style="color:var(--accent)">Protéger avec Fail2Ban</a></li>
+          <li><a href="article.html?id=3">DNSSEC : principes et mise en œuvre</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

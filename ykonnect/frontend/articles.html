@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Articles — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html" class="nav-active">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb"><a href="index.html">Accueil</a> › Articles</div>
+    <h1 class="page-header-title">Articles & Procédures</h1>
+    <p class="page-header-subtitle">Guides techniques, procédures d'installation et bonnes pratiques pour les professionnels et étudiants en système & réseau.</p>
+  </section>
+
+  <!-- Procédures -->
+  <section style="margin-top:20px;">
+    <h2 class="section-title">Procédures d'installation</h2>
+    <div class="grid grid-2">
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Réseau</span><span class="chip">Sécurité</span>
+          <span class="badge">Intermédiaire · 25 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="wireguard.html" style="color:var(--text)">Mise en place d'un VPN WireGuard</a>
+        </h3>
+        <p class="text-soft">Déployer un VPN moderne et performant entre Linux. Génération de clés, config serveur/client, pare-feu.</p>
+        <div style="margin-top:10px;">
+          <a href="wireguard.html" class="btn btn-ghost" style="font-size:12px;">Lire la procédure →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Sécurité</span><span class="chip">Système</span>
+          <span class="badge">Débutant · 20 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="fail2ban.html" style="color:var(--text)">Protéger ses services avec Fail2Ban</a>
+        </h3>
+        <p class="text-soft">Bloquer automatiquement les IP malveillantes. Jails SSH, Nginx, filtres personnalisés, monitoring.</p>
+        <div style="margin-top:10px;">
+          <a href="fail2ban.html" class="btn btn-ghost" style="font-size:12px;">Lire la procédure →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Réseau</span><span class="chip">Cloud</span>
+          <span class="badge">Intermédiaire · 30 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="haproxy.html" style="color:var(--text)">Mise en place d'HAProxy (load balancer)</a>
+        </h3>
+        <p class="text-soft">Reverse proxy et répartition de charge HTTP. Algorithmes, health checks, terminaison TLS, routage multi-site.</p>
+        <div style="margin-top:10px;">
+          <a href="haproxy.html" class="btn btn-ghost" style="font-size:12px;">Lire la procédure →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Réseau</span>
+          <span class="badge">Débutant · 8 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="article.html?id=1" style="color:var(--text)">Comprendre les VLANs en 30 minutes</a>
+        </h3>
+        <p class="text-soft">Segmentation logique, 802.1Q, modes trunk/access : introduction progressive avec schémas.</p>
+        <div style="margin-top:10px;">
+          <a href="article.html?id=1" class="btn btn-ghost" style="font-size:12px;">Lire l'article →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Système</span>
+          <span class="badge">Intermédiaire · 12 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="article.html?id=2" style="color:var(--text)">Hardening d'un serveur Linux : base commune</a>
+        </h3>
+        <p class="text-soft">Services, SSH, journaux, mises à jour : base de durcissement pour un Linux de production.</p>
+        <div style="margin-top:10px;">
+          <a href="article.html?id=2" class="btn btn-ghost" style="font-size:12px;">Lire l'article →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Sécurité</span>
+          <span class="badge">Avancé · 18 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="article.html?id=3" style="color:var(--text)">DNSSEC : principes, intérêts et points de vigilance</a>
+        </h3>
+        <p class="text-soft">Chaîne de confiance, signatures, clés, et impacts opérationnels dans un SI existant.</p>
+        <div style="margin-top:10px;">
+          <a href="article.html?id=3" class="btn btn-ghost" style="font-size:12px;">Lire l'article →</a>
+        </div>
+      </article>
+
+      <article class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="chip">Cloud</span>
+          <span class="badge">Intermédiaire · 10 min</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">
+          <a href="article.html?id=4" style="color:var(--text)">Docker & bonnes pratiques pour l'IT d'entreprise</a>
+        </h3>
+        <p class="text-soft">Images, registry, secrets, logs, observabilité : intégrer Docker proprement dans une infra.</p>
+        <div style="margin-top:10px;">
+          <a href="article.html?id=4" class="btn btn-ghost" style="font-size:12px;">Lire l'article →</a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- CKA -->
+  <section style="margin-top:30px;">
+    <h2 class="section-title">Parcours CKA — Certified Kubernetes Administrator</h2>
+    <div class="card" style="margin-bottom:16px;">
+      <p class="text-soft">Certification pratique CNCF — 4 modules disponibles sur 6. Examen 100% pratique sur cluster réel, 2h.</p>
+      <a href="certifications.html" class="btn btn-primary" style="margin-top:10px; display:inline-flex;">Voir le parcours complet →</a>
+    </div>
+    <div class="grid grid-2">
+      <a href="cka-archi.html" class="module-card">
+        <span class="chip" style="margin-bottom:8px; display:inline-block;">Module 1</span>
+        <h3 style="font-size:14px; margin-bottom:4px;">Architecture & Composants</h3>
+        <p class="text-soft">etcd, API Server, Scheduler, kubelet, kube-proxy.</p>
+      </a>
+      <a href="cka-workloads.html" class="module-card">
+        <span class="chip" style="margin-bottom:8px; display:inline-block;">Module 2</span>
+        <h3 style="font-size:14px; margin-bottom:4px;">Workloads & Scheduling</h3>
+        <p class="text-soft">Pods, Deployments, DaemonSets, Jobs, taints/tolerations.</p>
+      </a>
+      <a href="cka-networking.html" class="module-card">
+        <span class="chip" style="margin-bottom:8px; display:inline-block;">Module 3</span>
+        <h3 style="font-size:14px; margin-bottom:4px;">Services & Networking</h3>
+        <p class="text-soft">ClusterIP, NodePort, Ingress, NetworkPolicy, CoreDNS.</p>
+      </a>
+      <a href="cka-securite.html" class="module-card">
+        <span class="chip" style="margin-bottom:8px; display:inline-block;">Module 4</span>
+        <h3 style="font-size:14px; margin-bottom:4px;">Sécurité (RBAC & Pods)</h3>
+        <p class="text-soft">RBAC, ServiceAccounts, SecurityContext, Secrets.</p>
+      </a>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

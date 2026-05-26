@@ -1,0 +1,79 @@
+---
+- name: Deploy YKonnect on 192.168.4.80
+  hosts: ykonnect
+  become: true
+
+  vars:
+    app_dir: /opt/ykonnect
+    groq_api_key: "{{ lookup('env', 'GROQ_API_KEY') }}"
+
+  tasks:
+    - name: Install python3-docker (SDK Ansible)
+      apt:
+        name:
+          - python3-docker
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        mode: "0750"
+
+    - name: Archive ykonnect project locally
+      archive:
+        path: "{{ playbook_dir }}/../ykonnect/"
+        dest: /tmp/ykonnect.tar.gz
+        exclude_path:
+          - "{{ playbook_dir }}/../ykonnect/.env"
+        format: gz
+      delegate_to: localhost
+      become: false
+
+    - name: Upload archive to server
+      copy:
+        src: /tmp/ykonnect.tar.gz
+        dest: /tmp/ykonnect.tar.gz
+        mode: "0644"
+      become: false
+
+    - name: Extract archive
+      unarchive:
+        src: /tmp/ykonnect.tar.gz
+        dest: "{{ app_dir }}"
+        remote_src: true
+        extra_opts: ["--strip-components=0"]
+
+    - name: Deploy .env file
+      copy:
+        dest: "{{ app_dir }}/.env"
+        mode: "0600"
+        content: |
+          GROQ_API_KEY={{ groq_api_key }}
+
+    - name: Copy prometheus.yml updated config
+      copy:
+        src: "{{ playbook_dir }}/../monitoring/prometheus.yml"
+        dest: /home/hau/infra-deployment/monitoring/prometheus.yml
+        mode: "0644"
+
+    - name: Build and start containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ app_dir }}"
+        build: always
+        state: present
+
+    - name: Reload Prometheus configuration (hot reload)
+      uri:
+        url: http://localhost:9090/-/reload
+        method: POST
+        status_code: 200
+      ignore_errors: true

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Certifications — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb"><a href="index.html">Accueil</a> › Certifications</div>
+    <h1 class="page-header-title">Parcours de certifications IT</h1>
+    <p class="page-header-subtitle">Des cours structurés pour préparer les certifications les plus demandées dans les métiers réseau, système et cloud.</p>
+    <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
+      <span class="chip">Kubernetes (CKA)</span>
+      <span class="chip">Linux (LFCS)</span>
+      <span class="chip">Réseau (CCNA)</span>
+      <span class="chip">Cloud (en cours)</span>
+    </div>
+  </section>
+
+  <!-- CKA -->
+  <section style="margin-top:20px;">
+    <h2 class="section-title">CKA — Certified Kubernetes Administrator</h2>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div>
+          <p class="text-soft">Certification officielle de la CNCF. Examen pratique de 2h (cluster réel). Validité 3 ans.</p>
+          <p class="text-soft" style="margin-top:4px;">Domaines : Architecture · Workloads · Services · Storage · Sécurité · Maintenance</p>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge" style="font-size:13px; padding:4px 12px;">6 modules · ~12h</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-soft); margin-bottom:4px;">
+          <span>Progression du parcours</span><span>4/6 modules</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar" style="width:66%"></div></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <a href="cka-archi.html" class="module-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 1</span>
+          <span class="badge" style="background:rgba(38,198,218,0.15); color:var(--accent); border-color:var(--accent);">Disponible</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Architecture & Composants</h3>
+        <p class="text-soft">etcd, API Server, Scheduler, Controller Manager, kubelet, kube-proxy. Comprendre le plan de contrôle.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~2h · 12% de l'examen</p>
+      </a>
+
+      <a href="cka-workloads.html" class="module-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 2</span>
+          <span class="badge" style="background:rgba(38,198,218,0.15); color:var(--accent); border-color:var(--accent);">Disponible</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Workloads & Scheduling</h3>
+        <p class="text-soft">Pods, Deployments, DaemonSets, Jobs, CronJobs. Taints, tolerations, affinités, limites de ressources.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~2h · 15% de l'examen</p>
+      </a>
+
+      <a href="cka-networking.html" class="module-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 3</span>
+          <span class="badge" style="background:rgba(38,198,218,0.15); color:var(--accent); border-color:var(--accent);">Disponible</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Services & Networking</h3>
+        <p class="text-soft">ClusterIP, NodePort, LoadBalancer, Ingress, NetworkPolicy, CoreDNS, CNI plugins.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~2h · 20% de l'examen</p>
+      </a>
+
+      <a href="cka-securite.html" class="module-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 4</span>
+          <span class="badge" style="background:rgba(38,198,218,0.15); color:var(--accent); border-color:var(--accent);">Disponible</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Sécurité (RBAC & Pods)</h3>
+        <p class="text-soft">RBAC, ServiceAccounts, SecurityContext, Secrets, NetworkPolicy, TLS dans le cluster.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~2h · 12% de l'examen</p>
+      </a>
+
+      <div class="module-card" style="opacity:0.5; cursor:not-allowed;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 5</span>
+          <span class="badge">Bientôt</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Storage</h3>
+        <p class="text-soft">PersistentVolumes, PersistentVolumeClaims, StorageClass, CSI drivers, modes d'accès.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~1h30 · 10% de l'examen</p>
+      </div>
+
+      <div class="module-card" style="opacity:0.5; cursor:not-allowed;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip">Module 6</span>
+          <span class="badge">Bientôt</span>
+        </div>
+        <h3 style="font-size:15px; margin-bottom:4px;">Maintenance & Troubleshooting</h3>
+        <p class="text-soft">kubeadm upgrade, node drain/cordon, sauvegarde etcd, debug de pods en échec.</p>
+        <p style="margin-top:8px; font-size:12px; color:var(--text-soft);">⏱ ~2h · 30% de l'examen</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Autres certifs -->
+  <section style="margin-top:30px;">
+    <h2 class="section-title">Autres parcours (à venir)</h2>
+    <div class="grid grid-2">
+      <div class="card" style="opacity:0.6;">
+        <h3 style="font-size:15px; margin-bottom:4px;">LFCS — Linux Foundation Certified SysAdmin</h3>
+        <p class="text-soft">Administration Linux : utilisateurs, services systemd, réseau, stockage, scripting bash.</p>
+        <span class="badge" style="margin-top:8px; display:inline-block;">En préparation</span>
+      </div>
+      <div class="card" style="opacity:0.6;">
+        <h3 style="font-size:15px; margin-bottom:4px;">CCNA — Cisco Certified Network Associate</h3>
+        <p class="text-soft">Réseaux Cisco : switching, routing, OSPF, VLANs, ACL, WAN, sécurité réseau.</p>
+        <span class="badge" style="margin-top:8px; display:inline-block;">En préparation</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin-top:20px;">
+    <div class="card">
+      <h3 class="section-title">Préparer l'examen CKA — Conseils pratiques</h3>
+      <ul class="text-soft" style="margin-left:18px; font-size:13px; line-height:1.8;">
+        <li>L'examen est <strong>100% pratique</strong> sur un vrai cluster Kubernetes (pas de QCM)</li>
+        <li>Durée : <strong>2 heures</strong> · Score minimum : 66%</li>
+        <li>Tu as accès à la <strong>documentation officielle</strong> kubernetes.io pendant l'examen</li>
+        <li>Maîtriser <span class="code-inline">kubectl</span> en ligne de commande est indispensable</li>
+        <li>Pratiquer sur <strong>killer.sh</strong> (simulateur officiel) — 2 sessions incluses avec le voucher</li>
+        <li>Créer des alias : <span class="code-inline">alias k=kubectl</span> · <span class="code-inline">export do='--dry-run=client -o yaml'</span></li>
+      </ul>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>CKA Module 4 — Sécurité — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="certifications.html">Certifications</a> › CKA Module 4
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h1 class="page-header-title">Module 4 — Sécurité (RBAC & Pods)</h1>
+        <p class="page-header-subtitle">RBAC, ServiceAccounts, SecurityContext, Secrets et sécurisation du cluster.</p>
+        <p class="page-header-meta"><span class="chip">CKA</span> <span class="chip">Sécurité</span> · <span class="badge">~2h · 12% examen</span></p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='certifications.html'">← Retour CKA</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>RBAC — Role-Based Access Control</h2>
+      <p>RBAC contrôle qui peut faire quoi sur quelles ressources dans Kubernetes. Quatre objets principaux :</p>
+      <ul>
+        <li><strong>Role</strong> — permissions dans un namespace</li>
+        <li><strong>ClusterRole</strong> — permissions cluster-wide (ou réutilisables)</li>
+        <li><strong>RoleBinding</strong> — lie un Role à un user/group/SA dans un namespace</li>
+        <li><strong>ClusterRoleBinding</strong> — lie un ClusterRole à l'échelle du cluster</li>
+      </ul>
+
+      <h3>Créer un Role</h3>
+      <div class="code-block">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: default
+rules:
+- apiGroups: [""]            # "" = core API group
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]</div>
+
+      <h3>Lier le Role à un utilisateur</h3>
+      <div class="code-block">apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: alice-pod-reader
+  namespace: default
+subjects:
+- kind: User
+  name: alice
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io</div>
+
+      <h3>ClusterRole — lecture en lecture seule sur tout le cluster</h3>
+      <div class="code-block">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: global-reader
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]</div>
+
+      <h3>Commandes RBAC impératives</h3>
+      <div class="code-block"># Créer un Role rapidement
+kubectl create role pod-reader --verb=get,list --resource=pods -n default
+
+# Créer un RoleBinding
+kubectl create rolebinding alice-pod-reader \
+  --role=pod-reader --user=alice -n default
+
+# Vérifier les permissions d'un utilisateur
+kubectl auth can-i list pods --as=alice
+kubectl auth can-i delete deployments --as=alice -n production
+
+# Lister les RoleBindings
+kubectl get rolebinding,clusterrolebinding -A | grep alice</div>
+
+      <h2>ServiceAccounts</h2>
+      <p>Les ServiceAccounts permettent aux Pods de s'authentifier auprès de l'API Server. Chaque Pod utilise un SA (par défaut : <span class="code-inline">default</span>).</p>
+      <div class="code-block"># Créer un ServiceAccount
+kubectl create serviceaccount monitoring -n default
+
+# Associer un Role au ServiceAccount
+kubectl create rolebinding monitoring-binding \
+  --role=pod-reader \
+  --serviceaccount=default:monitoring
+
+# Utiliser le SA dans un Pod
+spec:
+  serviceAccountName: monitoring
+  automountServiceAccountToken: false   # Désactiver si non nécessaire</div>
+
+      <h2>Secrets</h2>
+      <p>Les Secrets stockent des données sensibles encodées en base64. <strong>Pas chiffrés par défaut</strong> — activer EncryptionConfiguration en production.</p>
+      <div class="code-block"># Créer un Secret générique
+kubectl create secret generic db-creds \
+  --from-literal=username=admin \
+  --from-literal=password=S3cr3t!
+
+# Secret pour une image Docker privée
+kubectl create secret docker-registry regcred \
+  --docker-server=registry.monentreprise.fr \
+  --docker-username=user \
+  --docker-password=pass</div>
+      <div class="code-block"># Injecter un Secret en variable d'environnement
+env:
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: db-creds
+      key: password
+
+# Monter un Secret en volume
+volumes:
+- name: secret-vol
+  secret:
+    secretName: db-creds
+volumeMounts:
+- name: secret-vol
+  mountPath: /etc/secrets
+  readOnly: true</div>
+
+      <h2>SecurityContext</h2>
+      <p>Définit les paramètres de sécurité d'un Pod ou d'un conteneur.</p>
+      <div class="code-block">spec:
+  securityContext:
+    runAsUser: 1000          # UID de l'utilisateur
+    runAsGroup: 3000         # GID principal
+    fsGroup: 2000            # GID pour les volumes
+    runAsNonRoot: true       # Refuser root
+
+  containers:
+  - name: app
+    image: nginx
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true   # FS en lecture seule
+      capabilities:
+        drop: ["ALL"]                # Retirer toutes les capabilities Linux
+        add: ["NET_BIND_SERVICE"]    # Réajouter uniquement ce qui est nécessaire</div>
+
+      <h2>Certificates & TLS dans le cluster</h2>
+      <div class="code-block"># Voir les certificats du cluster
+sudo ls /etc/kubernetes/pki/
+# ca.crt, apiserver.crt, etcd/ca.crt...
+
+# Décoder un certificat
+openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -text | grep -A2 "Subject\|Issuer\|Not After"
+
+# Approuver une CSR (Certificate Signing Request)
+kubectl get csr
+kubectl certificate approve &lt;nom-csr&gt;
+kubectl certificate deny &lt;nom-csr&gt;</div>
+
+      <h2>kubeconfig & Contextes</h2>
+      <div class="code-block"># Voir la config actuelle
+kubectl config view
+
+# Lister les contextes
+kubectl config get-contexts
+
+# Changer de contexte
+kubectl config use-context prod-cluster
+
+# Créer un contexte pour un namespace
+kubectl config set-context --current --namespace=production</div>
+
+      <div class="tip-box">💡 Mémoriser : <strong>kubectl auth can-i</strong> pour vérifier les permissions, <strong>--as=</strong> pour tester en tant qu'autre user.</div>
+      <div class="warn-box">⚠️ Ne jamais monter le token SA si le Pod n'appelle pas l'API Kubernetes. Utiliser <strong>automountServiceAccountToken: false</strong>.</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Navigation CKA</h3>
+        <ul style="list-style:none; font-size:13px; line-height:2;">
+          <li><a href="cka-archi.html" style="color:var(--text-soft)">Module 1 — Architecture</a></li>
+          <li><a href="cka-workloads.html" style="color:var(--text-soft)">Module 2 — Workloads</a></li>
+          <li><a href="cka-networking.html" style="color:var(--text-soft)">Module 3 — Networking</a></li>
+          <li>▶ <strong style="color:var(--accent)">Module 4 — Sécurité</strong></li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 5 — Storage</li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 6 — Maintenance</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Verbes RBAC courants</h3>
+        <ul class="text-soft" style="margin-left:16px; font-size:13px; line-height:1.8;">
+          <li>get · list · watch</li>
+          <li>create · update · patch</li>
+          <li>delete · deletecollection</li>
+          <li>exec · portforward</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Demander au bot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur la sécurité K8s ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Chatbot</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>CKA Module 1 — Architecture Kubernetes — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="certifications.html">Certifications</a> › CKA Module 1
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h1 class="page-header-title">Module 1 — Architecture & Composants Kubernetes</h1>
+        <p class="page-header-subtitle">Comprendre le plan de contrôle, les nœuds workers et la communication entre composants.</p>
+        <p class="page-header-meta">
+          <span class="chip">CKA</span> <span class="chip">Architecture</span>
+          · <span class="badge">~2h · 12% examen</span>
+        </p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='certifications.html'">← Retour CKA</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Vue d'ensemble d'un cluster Kubernetes</h2>
+      <p>Un cluster Kubernetes est composé de deux types de nœuds :</p>
+      <ul>
+        <li><strong>Control Plane (Master)</strong> — cerveau du cluster, prend les décisions d'orchestration</li>
+        <li><strong>Worker Nodes</strong> — exécutent les charges de travail (conteneurs)</li>
+      </ul>
+      <div class="code-block">┌─────────────────────────── CONTROL PLANE ───────────────────────────┐
+│                                                                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
+│  │  API Server  │  │    etcd      │  │  Controller Manager      │  │
+│  │  :6443       │  │  :2379-2380  │  │  (node, replication…)    │  │
+│  └──────┬───────┘  └──────────────┘  └──────────────────────────┘  │
+│         │                                                            │
+│  ┌──────┴───────┐                                                    │
+│  │  Scheduler   │                                                    │
+│  └──────────────┘                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+         │ (kubectl / kubelet)
+┌────────┴──────────────────────── WORKERS ───────────────────────────┐
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐               │
+│  │   kubelet   │   │ kube-proxy  │   │  Container  │               │
+│  │             │   │             │   │  Runtime    │               │
+│  │  Node1      │   │  Node2      │   │  (containerd│               │
+│  └─────────────┘   └─────────────┘   │  CRI-O…)   │               │
+└─────────────────────────────────────────────────────────────────────┘</div>
+
+      <h2>Composants du Control Plane</h2>
+
+      <h3>kube-apiserver</h3>
+      <p>Point d'entrée unique pour toutes les opérations. Expose l'API REST Kubernetes. Authentifie, autorise et valide chaque requête. Tous les autres composants communiquent exclusivement via l'API Server.</p>
+      <div class="code-block"># Vérifier l'API server
+kubectl get --raw /healthz
+kubectl cluster-info</div>
+
+      <h3>etcd</h3>
+      <p>Base de données clé-valeur distribuée (Raft consensus). Stocke <strong>tout l'état du cluster</strong> : objets, configurations, secrets. Un seul etcd en dev, 3 ou 5 nœuds en production (quorum).</p>
+      <div class="code-block"># Lister les clés etcd (depuis le control plane)
+ETCDCTL_API=3 etcdctl get / --prefix --keys-only \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key</div>
+
+      <h3>kube-scheduler</h3>
+      <p>Surveille les Pods sans nœud assigné (Pending) et choisit le meilleur nœud selon :</p>
+      <ul>
+        <li>Les ressources disponibles (CPU, mémoire)</li>
+        <li>Les contraintes (nodeSelector, affinity, taints/tolerations)</li>
+        <li>Les policies de spreading</li>
+      </ul>
+
+      <h3>kube-controller-manager</h3>
+      <p>Exécute les boucles de contrôle (reconciliation loops). Chaque contrôleur surveille un état cible et agit pour l'atteindre :</p>
+      <ul>
+        <li><strong>ReplicationController</strong> — maintient le nombre de réplicas voulu</li>
+        <li><strong>NodeController</strong> — détecte les nœuds défaillants</li>
+        <li><strong>EndpointsController</strong> — peuple les Endpoints des Services</li>
+        <li><strong>ServiceAccountController</strong> — crée les comptes de service par défaut</li>
+      </ul>
+
+      <h2>Composants des Worker Nodes</h2>
+
+      <h3>kubelet</h3>
+      <p>Agent qui tourne sur chaque nœud. Reçoit les PodSpecs depuis l'API Server et s'assure que les conteneurs décrits tournent correctement. Communique avec le container runtime via CRI.</p>
+      <div class="code-block"># Vérifier le statut kubelet
+sudo systemctl status kubelet
+sudo journalctl -u kubelet -f</div>
+
+      <h3>kube-proxy</h3>
+      <p>Maintient les règles réseau (iptables ou IPVS) pour implémenter les Services Kubernetes. Assure le routage des paquets vers les bons Pods.</p>
+
+      <h3>Container Runtime</h3>
+      <p>Responsable de l'exécution des conteneurs. Kubernetes utilise l'interface CRI (Container Runtime Interface). Runtimes supportés :</p>
+      <ul>
+        <li><strong>containerd</strong> — le plus utilisé en production</li>
+        <li><strong>CRI-O</strong> — runtime léger pour Kubernetes</li>
+        <li><strong>Docker</strong> — via dockershim (déprécié depuis K8s 1.24)</li>
+      </ul>
+      <div class="code-block"># Vérifier le runtime utilisé
+kubectl get node -o wide
+# Colonne CONTAINER-RUNTIME : containerd://1.7.x</div>
+
+      <h2>Communication dans le cluster</h2>
+      <div class="code-block"># Flux d'une commande kubectl apply :
+kubectl apply → API Server → etcd (état stocké)
+                           → Scheduler (assigne nœud)
+                           → kubelet (crée le Pod)
+                           → container runtime (démarre le conteneur)</div>
+
+      <h2>Commandes essentielles CKA</h2>
+      <div class="code-block"># Voir les composants du control plane
+kubectl get pods -n kube-system
+
+# Informations sur le cluster
+kubectl cluster-info
+kubectl cluster-info dump | head -50
+
+# Voir les nœuds et leurs rôles
+kubectl get nodes -o wide
+
+# Décrire un nœud (capacité, conditions, pods)
+kubectl describe node &lt;nom-noeud&gt;
+
+# Vérifier la version de l'API Server
+kubectl version</div>
+
+      <h2>Questions type examen CKA</h2>
+      <div class="tip-box">
+        <strong>Q :</strong> Quel composant est responsable de l'assignation d'un Pod à un nœud ?<br>
+        <strong>R :</strong> kube-scheduler
+      </div>
+      <div class="tip-box">
+        <strong>Q :</strong> Où est stocké l'état du cluster Kubernetes ?<br>
+        <strong>R :</strong> Dans etcd
+      </div>
+      <div class="tip-box">
+        <strong>Q :</strong> Quel composant tourne sur chaque worker node et gère les Pods ?<br>
+        <strong>R :</strong> kubelet
+      </div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Navigation CKA</h3>
+        <ul style="list-style:none; font-size:13px; line-height:2;">
+          <li>▶ <strong style="color:var(--accent)">Module 1 — Architecture</strong></li>
+          <li><a href="cka-workloads.html" style="color:var(--text-soft)">Module 2 — Workloads</a></li>
+          <li><a href="cka-networking.html" style="color:var(--text-soft)">Module 3 — Networking</a></li>
+          <li><a href="cka-securite.html" style="color:var(--text-soft)">Module 4 — Sécurité</a></li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 5 — Storage (bientôt)</li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 6 — Maintenance (bientôt)</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Ressources officielles</h3>
+        <ul class="text-soft" style="margin-left:16px; font-size:13px; line-height:1.8;">
+          <li>kubernetes.io/docs</li>
+          <li>killer.sh (simulateur)</li>
+          <li>training.linuxfoundation.org</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Demander au bot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur l'archi Kubernetes ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Chatbot</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thématiques — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text">
+        <span>YKonnect</span>
+        <span>débranche moi si tu peux</span>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html" class="nav-active">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">
+        💬 Demander au bot
+      </button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › Thématiques
+    </div>
+    <h1 class="page-header-title">Thématiques YKonnect</h1>
+    <p class="page-header-subtitle">
+      Vue synthétique des grands domaines couverts par la base d’articles :
+      système, réseau, sécurité, cloud, DevOps…
+    </p>
+  </section>
+
+  <section>
+    <h2 class="section-title">Domaines principaux</h2>
+    <div class="grid grid-2">
+      <article class="card">
+        <h3 style="font-size:16px; margin-bottom:4px;">Système</h3>
+        <p class="text-soft">
+          Administration Windows / Linux, services, GPO, AD, automatisation de tâches, supervision.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3 style="font-size:16px; margin-bottom:4px;">Réseau</h3>
+        <p class="text-soft">
+          VLANs, routage, VPN, Wi-Fi, DHCP, DNS, pare-feu, QoS, design d’architecture LAN/WAN.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3 style="font-size:16px; margin-bottom:4px;">Sécurité</h3>
+        <p class="text-soft">
+          Hardening, bastions, IAM, chiffrement, PKI, DNSSEC, SOC, bonnes pratiques de sécurité opérationnelle.
+        </p>
+      </article>
+
+      <article class="card">
+        <h3 style="font-size:16px; margin-bottom:4px;">Cloud & DevOps</h3>
+        <p class="text-soft">
+          Virtualisation, containers, Docker, CI/CD, IaC, observabilité, optimisation des coûts.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section style="margin-top:20px;">
+    <h2 class="section-title">Organisation future en BDD</h2>
+    <div class="card">
+      <p class="text-soft">
+        Chaque article sera rattaché à une ou plusieurs thématiques au niveau BDD
+        (ex : tables <code>themes</code> et table de jointure <code>article_theme</code>).
+        Le chatbot pourra utiliser ces tags pour prioriser certains contenus en fonction
+        de la question utilisateur.
+      </p>
+    </div>
+  </section>
+</div>
+</body>
+</html>

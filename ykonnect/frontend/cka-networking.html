@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>CKA Module 3 — Networking — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="certifications.html">Certifications</a> › CKA Module 3
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h1 class="page-header-title">Module 3 — Services & Networking</h1>
+        <p class="page-header-subtitle">Services, Ingress, NetworkPolicy, DNS interne et modèle réseau Kubernetes.</p>
+        <p class="page-header-meta"><span class="chip">CKA</span> <span class="chip">Networking</span> · <span class="badge">~2h · 20% examen</span></p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='certifications.html'">← Retour CKA</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Modèle réseau Kubernetes</h2>
+      <p>Kubernetes impose un modèle réseau simple :</p>
+      <ul>
+        <li>Chaque Pod reçoit une <strong>IP unique</strong> dans le cluster</li>
+        <li>Les Pods communiquent entre eux <strong>sans NAT</strong></li>
+        <li>Les nœuds communiquent avec tous les Pods <strong>sans NAT</strong></li>
+        <li>L'IP visible d'un Pod est la même depuis l'intérieur et l'extérieur du Pod</li>
+      </ul>
+      <p>Ce modèle est implémenté par un plugin CNI (Container Network Interface) : <strong>Calico, Flannel, Cilium, Weave</strong>…</p>
+
+      <h2>Services</h2>
+      <p>Un Service expose un ensemble de Pods via une IP virtuelle stable (ClusterIP). Les Pods sélectionnés via <strong>labels</strong>.</p>
+
+      <h3>ClusterIP (défaut)</h3>
+      <p>IP virtuelle accessible uniquement depuis l'intérieur du cluster.</p>
+      <div class="code-block">apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-svc
+spec:
+  selector:
+    app: webapp          # Cible les Pods avec ce label
+  ports:
+  - protocol: TCP
+    port: 80             # Port du Service
+    targetPort: 8080     # Port du conteneur
+  type: ClusterIP</div>
+
+      <h3>NodePort</h3>
+      <p>Expose le Service sur un port de <strong>chaque nœud</strong> (30000-32767). Accessible de l'extérieur via <span class="code-inline">&lt;NodeIP&gt;:&lt;NodePort&gt;</span>.</p>
+      <div class="code-block">spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+    nodePort: 30080     # Optionnel, assigné auto sinon</div>
+
+      <h3>LoadBalancer</h3>
+      <p>Provisionne un load balancer externe (cloud provider). En on-prem : utiliser MetalLB.</p>
+      <div class="code-block">spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080</div>
+
+      <h3>ExternalName</h3>
+      <p>Mappe un Service vers un FQDN externe (DNS CNAME).</p>
+      <div class="code-block">spec:
+  type: ExternalName
+  externalName: api.externe.com</div>
+
+      <h2>DNS interne — CoreDNS</h2>
+      <p>CoreDNS résout les noms de services dans le cluster. Format DNS :</p>
+      <div class="code-block"># Depuis un Pod, accéder à un Service :
+&lt;service&gt;.&lt;namespace&gt;.svc.cluster.local
+
+# Exemples :
+webapp-svc.default.svc.cluster.local
+postgres.database.svc.cluster.local
+
+# Raccourci (même namespace) :
+webapp-svc
+
+# Tester la résolution DNS depuis un Pod
+kubectl run test --image=busybox --rm -it -- nslookup webapp-svc</div>
+
+      <h2>Ingress</h2>
+      <p>Expose des Services HTTP/HTTPS avec routage basé sur host/path. Nécessite un <strong>Ingress Controller</strong> (nginx-ingress, Traefik, HAProxy…).</p>
+      <div class="code-block">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: app.mondomaine.fr
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-svc
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - app.mondomaine.fr
+    secretName: tls-secret</div>
+
+      <h2>NetworkPolicy</h2>
+      <p>Contrôle le trafic réseau entre Pods. Par défaut, tous les Pods peuvent communiquer librement. Les NetworkPolicy sont <strong>additivement permissives</strong>.</p>
+      <div class="code-block"># Interdire tout le trafic entrant vers les Pods du namespace "production"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: production
+spec:
+  podSelector: {}       # Cible tous les Pods
+  policyTypes:
+  - Ingress             # Pas de règle Ingress = tout bloquer</div>
+      <div class="code-block"># Autoriser uniquement le trafic du namespace "monitoring"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: webapp
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080</div>
+
+      <h2>Commandes réseau clés</h2>
+      <div class="code-block"># Créer un Service impératif
+kubectl expose deployment webapp --port=80 --target-port=8080 --type=ClusterIP
+
+# Voir les Endpoints d'un Service
+kubectl get endpoints webapp-svc
+
+# Debugger le réseau avec un Pod temporaire
+kubectl run debug --image=nicolaka/netshoot --rm -it -- bash
+
+# Vérifier les NetworkPolicy
+kubectl get networkpolicy -n production
+
+# Voir la configuration CoreDNS
+kubectl get configmap coredns -n kube-system -o yaml</div>
+
+      <div class="tip-box">💡 À l'examen : savoir créer un Service rapidement avec <strong>kubectl expose</strong> et débugger avec un Pod <strong>busybox</strong> ou <strong>nicolaka/netshoot</strong>.</div>
+      <div class="warn-box">⚠️ Les NetworkPolicy ne fonctionnent que si le CNI les supporte (Calico, Cilium oui — Flannel non par défaut).</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Navigation CKA</h3>
+        <ul style="list-style:none; font-size:13px; line-height:2;">
+          <li><a href="cka-archi.html" style="color:var(--text-soft)">Module 1 — Architecture</a></li>
+          <li><a href="cka-workloads.html" style="color:var(--text-soft)">Module 2 — Workloads</a></li>
+          <li>▶ <strong style="color:var(--accent)">Module 3 — Networking</strong></li>
+          <li><a href="cka-securite.html" style="color:var(--text-soft)">Module 4 — Sécurité</a></li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 5 — Storage</li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 6 — Maintenance</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Points clés examen</h3>
+        <ul class="text-soft" style="margin-left:16px; font-size:13px; line-height:1.8;">
+          <li>Types de Services</li>
+          <li>Format DNS interne</li>
+          <li>Ingress + TLS</li>
+          <li>NetworkPolicy ingress/egress</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Demander au bot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur le networking K8s ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Chatbot</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

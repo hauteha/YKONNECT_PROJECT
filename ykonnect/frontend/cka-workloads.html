@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>CKA Module 2 — Workloads — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html" class="nav-active">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="certifications.html">Certifications</a> › CKA Module 2
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div>
+        <h1 class="page-header-title">Module 2 — Workloads & Scheduling</h1>
+        <p class="page-header-subtitle">Maîtriser les objets de charge de travail et le placement des Pods sur les nœuds.</p>
+        <p class="page-header-meta"><span class="chip">CKA</span> <span class="chip">Workloads</span> · <span class="badge">~2h · 15% examen</span></p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='certifications.html'">← Retour CKA</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Pod — l'unité de base</h2>
+      <p>Un Pod est le plus petit objet déployable dans Kubernetes. Il encapsule un ou plusieurs conteneurs qui partagent le même réseau et le même espace de stockage.</p>
+      <div class="code-block"># Créer un Pod impératif (utile à l'examen)
+kubectl run nginx --image=nginx --port=80
+
+# Générer le YAML sans créer (--dry-run=client -o yaml)
+kubectl run nginx --image=nginx --dry-run=client -o yaml > pod.yaml
+
+# Appliquer
+kubectl apply -f pod.yaml
+
+# Voir les Pods
+kubectl get pods -o wide
+
+# Détails et events
+kubectl describe pod nginx
+
+# Logs
+kubectl logs nginx -f
+
+# Shell interactif dans un conteneur
+kubectl exec -it nginx -- /bin/bash</div>
+
+      <h2>Deployment</h2>
+      <p>Gère un ensemble de Pods identiques avec rolling update et rollback.</p>
+      <div class="code-block">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"</div>
+      <div class="code-block"># Scaler un Deployment
+kubectl scale deployment webapp --replicas=5
+
+# Mettre à jour l'image
+kubectl set image deployment/webapp webapp=nginx:1.26
+
+# Voir le statut du rollout
+kubectl rollout status deployment/webapp
+
+# Historique des déploiements
+kubectl rollout history deployment/webapp
+
+# Rollback vers la version précédente
+kubectl rollout undo deployment/webapp</div>
+
+      <h2>DaemonSet</h2>
+      <p>Assure qu'un Pod tourne sur <strong>chaque nœud</strong> du cluster (ou un sous-ensemble). Cas d'usage : collecte de logs (Fluentd), monitoring (node-exporter), agents réseau.</p>
+      <div class="code-block">apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      containers:
+      - name: node-exporter
+        image: prom/node-exporter:latest</div>
+
+      <h2>Jobs & CronJobs</h2>
+      <div class="code-block"># Job : tâche ponctuelle qui se termine
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi-calculator
+spec:
+  completions: 3      # Nombre de succès requis
+  parallelism: 2      # Pods parallèles
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl", "-Mbignum=bpi", "-wle", "print bpi(2000)"]</div>
+      <div class="code-block"># CronJob : tâche planifiée (syntaxe cron standard)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-db
+spec:
+  schedule: "0 2 * * *"   # Tous les jours à 2h
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: postgres:15
+            command: ["/bin/sh", "-c", "pg_dump ..."]</div>
+
+      <h2>Limites de ressources</h2>
+      <p>Toujours définir <strong>requests</strong> et <strong>limits</strong> pour permettre au scheduler de placer les Pods correctement et éviter la contention.</p>
+      <div class="code-block">resources:
+  requests:
+    cpu: "200m"       # 0.2 CPU garanti
+    memory: "256Mi"   # 256 MiB garanti
+  limits:
+    cpu: "500m"       # Maximum 0.5 CPU
+    memory: "512Mi"   # OOMKill si dépassé</div>
+
+      <h2>Taints & Tolerations</h2>
+      <p>Les taints empêchent les Pods de s'exécuter sur un nœud, sauf s'ils ont la toleration correspondante.</p>
+      <div class="code-block"># Ajouter un taint sur un nœud
+kubectl taint nodes node1 gpu=true:NoSchedule
+
+# Toleration dans le Pod pour accepter ce nœud
+tolerations:
+- key: "gpu"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"</div>
+
+      <h2>Node Affinity & nodeSelector</h2>
+      <div class="code-block"># nodeSelector (simple)
+spec:
+  nodeSelector:
+    disktype: ssd
+
+# Node Affinity (plus puissant, avec operateurs)
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: zone
+            operator: In
+            values: ["zone-a", "zone-b"]</div>
+
+      <h2>Commandes clés pour l'examen</h2>
+      <div class="code-block"># Alias recommandés à l'examen
+alias k=kubectl
+export do='--dry-run=client -o yaml'
+export now='--force --grace-period 0'
+
+# Créer des ressources rapidement
+k create deployment web --image=nginx --replicas=3 $do > dep.yaml
+k create job myjob --image=busybox -- sleep 10 $do > job.yaml
+k create cronjob mycron --image=busybox --schedule="*/5 * * * *" -- date $do</div>
+
+      <div class="tip-box">💡 À l'examen, préférer <strong>kubectl create</strong> avec <strong>--dry-run=client -o yaml</strong> pour générer le YAML rapidement, puis l'ajuster si nécessaire.</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Navigation CKA</h3>
+        <ul style="list-style:none; font-size:13px; line-height:2;">
+          <li><a href="cka-archi.html" style="color:var(--text-soft)">Module 1 — Architecture</a></li>
+          <li>▶ <strong style="color:var(--accent)">Module 2 — Workloads</strong></li>
+          <li><a href="cka-networking.html" style="color:var(--text-soft)">Module 3 — Networking</a></li>
+          <li><a href="cka-securite.html" style="color:var(--text-soft)">Module 4 — Sécurité</a></li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 5 — Storage</li>
+          <li style="color:var(--text-soft); opacity:0.5;">Module 6 — Maintenance</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Objets à connaître</h3>
+        <ul class="text-soft" style="margin-left:16px; font-size:13px; line-height:1.8;">
+          <li>Pod · Deployment · ReplicaSet</li>
+          <li>DaemonSet · StatefulSet</li>
+          <li>Job · CronJob</li>
+          <li>ConfigMap · Secret</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Demander au bot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur les workloads K8s ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Chatbot</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

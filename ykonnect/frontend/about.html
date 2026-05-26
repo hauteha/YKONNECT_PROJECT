@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>À propos — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text">
+        <span>YKonnect</span>
+        <span>débranche moi si tu peux</span>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html" class="nav-active">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">
+        💬 Discuter avec le bot
+      </button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › À propos
+    </div>
+    <h1 class="page-header-title">À propos de YKonnect</h1>
+    <p class="page-header-subtitle">
+      Une plateforme inspirée d’IT-Connect pour centraliser des contenus techniques IT,
+      avec un chatbot capable de s’appuyer sur la base d’articles et le web.
+    </p>
+  </section>
+
+  <section class="grid grid-2">
+    <div class="card">
+      <h2 class="section-title">Vision</h2>
+      <p class="text-soft">
+        L’objectif de YKonnect est de fournir un point d’entrée unique pour la
+        connaissance IT : administration système, réseau, sécurité, cloud, DevOps.
+        Le chatbot sert d’interface intelligente capable de :
+      </p>
+      <ul class="text-soft" style="margin-left:18px; margin-top:6px;">
+        <li>Rechercher d’abord dans la base d’articles interne.</li>
+        <li>Compléter au besoin avec des informations issues du web.</li>
+        <li>Référencer systématiquement les sources utilisées.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Architecture cible</h2>
+      <p class="text-soft">
+        À terme, l’architecture pourra s’articuler autour :
+      </p>
+      <ul class="text-soft" style="margin-left:18px; margin-top:6px;">
+        <li>Une BDD relationnelle (ex : PostgreSQL) pour les articles, tags, utilisateurs.</li>
+        <li>Une API backend (REST / GraphQL) pour exposer la connaissance.</li>
+        <li>Un moteur de recherche (full-text + vectoriel) exploité par le chatbot.</li>
+        <li>Un front en SPA ou SSR selon les choix techniques.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+</body>
+</html>

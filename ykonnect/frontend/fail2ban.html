@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fail2Ban — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html" class="nav-active">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="articles.html">Articles</a> › Fail2Ban
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div>
+        <h1 class="page-header-title">Protéger ses services avec Fail2Ban</h1>
+        <p class="page-header-subtitle">Bloquer automatiquement les IP qui effectuent des tentatives d'intrusion répétées.</p>
+        <p class="page-header-meta">
+          Catégorie : <span class="chip">Sécurité</span> <span class="chip">Système</span>
+          · Niveau : <span class="badge">Débutant · 20 min</span>
+          · Mise à jour : 2026-05-01
+        </p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='articles.html'">← Retour</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Principe de fonctionnement</h2>
+      <p>Fail2Ban analyse en temps réel les fichiers de logs des services (SSH, Nginx, Apache, Postfix…). Lorsqu'une IP dépasse un seuil de tentatives échouées, elle est automatiquement bannie via iptables/nftables pour une durée configurable.</p>
+      <ul>
+        <li><strong>Filter</strong> — expression régulière qui détecte les échecs dans les logs</li>
+        <li><strong>Jail</strong> — association d'un filtre + d'une action + des seuils</li>
+        <li><strong>Action</strong> — ce qui est fait lors d'un ban (iptables, firewalld, email…)</li>
+      </ul>
+
+      <h2>1. Installation</h2>
+      <div class="code-block">sudo apt update && sudo apt install -y fail2ban</div>
+      <div class="code-block">sudo systemctl enable --now fail2ban
+sudo systemctl status fail2ban</div>
+
+      <h2>2. Fichier de configuration</h2>
+      <p>Ne jamais modifier <span class="code-inline">/etc/fail2ban/jail.conf</span> directement — il est écrasé lors des mises à jour. Créer à la place :</p>
+      <div class="code-block">sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local</div>
+      <p>Ou créer un fichier dédié (approche recommandée) :</p>
+      <div class="code-block">sudo nano /etc/fail2ban/jail.d/custom.conf</div>
+
+      <h2>3. Configuration de la jail SSH</h2>
+      <p>Contenu de <span class="code-inline">/etc/fail2ban/jail.d/custom.conf</span> :</p>
+      <div class="code-block">[DEFAULT]
+# Ignorer ses propres IP (admin, monitoring...)
+ignoreip = 127.0.0.1/8 ::1 192.168.4.0/24
+
+# Durée du ban : 1 heure
+bantime  = 3600
+
+# Fenêtre d'observation : 10 minutes
+findtime = 600
+
+# Nombre de tentatives avant ban
+maxretry = 5
+
+# Envoyer un mail lors d'un ban (optionnel)
+# destemail = admin@example.com
+# sendername = Fail2Ban
+# action = %(action_mwl)s
+
+[sshd]
+enabled  = true
+port     = ssh
+logpath  = %(sshd_log)s
+backend  = %(sshd_backend)s
+maxretry = 3</div>
+
+      <h2>4. Protéger Nginx (authentification)</h2>
+      <div class="code-block">[nginx-http-auth]
+enabled  = true
+port     = http,https
+logpath  = /var/log/nginx/error.log
+maxretry = 5
+
+[nginx-botsearch]
+enabled  = true
+port     = http,https
+logpath  = /var/log/nginx/access.log
+maxretry = 2</div>
+
+      <h2>5. Redémarrer et vérifier</h2>
+      <div class="code-block"># Recharger la configuration
+sudo fail2ban-client reload
+
+# Voir le statut de toutes les jails
+sudo fail2ban-client status
+
+# Voir les IP bannies pour SSH
+sudo fail2ban-client status sshd</div>
+
+      <h2>6. Gestion des bans manuels</h2>
+      <div class="code-block"># Débannir une IP manuellement
+sudo fail2ban-client set sshd unbanip 203.0.113.42
+
+# Bannir manuellement une IP
+sudo fail2ban-client set sshd banip 203.0.113.42
+
+# Voir les règles iptables générées
+sudo iptables -L f2b-sshd -n --line-numbers</div>
+
+      <h2>7. Tester un filtre personnalisé</h2>
+      <p>Avant d'activer une jail, tester le filtre sur les logs existants :</p>
+      <div class="code-block"># Tester le filtre SSH sur les logs
+sudo fail2ban-regex /var/log/auth.log /etc/fail2ban/filter.d/sshd.conf
+
+# Résultat attendu : nombre de matchs trouvés
+# Lines: 1247 lines, 0 ignored, 42 matched, 1205 missed</div>
+
+      <h2>8. Créer un filtre personnalisé</h2>
+      <p>Exemple pour bloquer les scans de ports via Nginx :</p>
+      <div class="code-block">sudo nano /etc/fail2ban/filter.d/nginx-scan.conf</div>
+      <div class="code-block">[Definition]
+failregex = ^&lt;HOST&gt; -.*"(GET|POST|HEAD) /(admin|wp-login|phpmyadmin|\.env).*" (404|403)
+ignoreregex =</div>
+      <div class="code-block">[nginx-scan]
+enabled  = true
+port     = http,https
+filter   = nginx-scan
+logpath  = /var/log/nginx/access.log
+maxretry = 3
+bantime  = 86400</div>
+
+      <h2>Logs et monitoring</h2>
+      <div class="code-block"># Logs Fail2Ban en temps réel
+sudo tail -f /var/log/fail2ban.log
+
+# Statistiques globales
+sudo fail2ban-client status
+
+# Intégrer avec journald
+sudo journalctl -u fail2ban -f</div>
+
+      <div class="tip-box">💡 Penser à ajouter son IP d'administration dans <strong>ignoreip</strong> pour ne pas se baner soi-même lors de tests.</div>
+      <div class="warn-box">⚠️ Fail2Ban ne remplace pas un pare-feu. C'est une couche supplémentaire — toujours combiner avec UFW ou iptables.</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Métadonnées</h3>
+        <p class="text-soft">
+          <strong>Auteur :</strong> YKonnect<br>
+          <strong>Mots-clés :</strong> Fail2Ban, brute-force, IPS, SSH, iptables<br>
+          <strong>OS :</strong> Debian 12, Ubuntu 22.04+
+        </p>
+        <hr style="border:none; border-top:1px solid var(--border-subtle); margin:12px 0;">
+        <h3 class="section-title">Prérequis</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li>Accès root / sudo</li>
+          <li>iptables ou nftables actif</li>
+          <li>Services à protéger installés</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Demander au chatbot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur Fail2Ban ou la sécurité Linux ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Ouvrir le chatbot</button>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Articles liés</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li><a href="wireguard.html" style="color:var(--accent)">VPN WireGuard</a></li>
+          <li><a href="haproxy.html" style="color:var(--accent)">HAProxy load balancer</a></li>
+          <li><a href="article.html?id=2">Hardening d'un serveur Linux</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

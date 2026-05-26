@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Article — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text">
+        <span>YKonnect</span>
+        <span>débranche moi si tu peux</span>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html" class="nav-active">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">
+        💬 Question sur cet article
+      </button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="articles.html">Articles</a> › Fiche article
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div>
+        <h1 class="page-header-title">Comprendre les VLANs en 30 minutes</h1>
+        <p class="page-header-subtitle">
+          Segmentation logique, 802.1Q, modes access/trunk, bonnes pratiques de conception.
+        </p>
+        <p class="page-header-meta">
+          Catégorie : <span class="chip">Réseau</span> · Niveau : <span class="badge">Débutant</span> ·
+          Dernière mise à jour : 2025-10-04
+        </p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+        <button class="btn btn-outline-primary" onclick="window.location='articles.html'">← Retour à la liste</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card">
+      <!-- Ici tu injecteras le contenu markdown/HTML depuis la BDD -->
+      <h2 style="font-size:18px; margin-bottom:10px;">1. Pourquoi utiliser des VLANs ?</h2>
+      <p class="text-soft">
+        Les VLANs permettent de segmenter un réseau de niveau 2 en plusieurs domaines de broadcast
+        logiques, indépendants de la topologie physique. Cela améliore l’isolation, la sécurité et la maîtrise
+        des flux.
+      </p>
+
+      <h2 style="font-size:18px; margin:18px 0 10px;">2. Types de ports : access vs trunk</h2>
+      <ul class="text-soft" style="margin-left:18px;">
+        <li><strong>Port access</strong> : appartenance à un seul VLAN (poste utilisateur, imprimante…).</li>
+        <li><strong>Port trunk</strong> : transporte plusieurs VLANs taggués (802.1Q) entre deux équipements.</li>
+      </ul>
+
+      <h2 style="font-size:18px; margin:18px 0 10px;">3. Schéma type</h2>
+      <p class="text-soft">
+        Dans la BDD, tu pourras stocker un lien vers un schéma ou un bloc de diagramme
+        (mermaid, draw.io, etc.) que le front restituera ici.
+      </p>
+    </article>
+
+    <aside class="card">
+      <h3 class="section-title">Métadonnées</h3>
+      <p class="text-soft">
+        <strong>Auteur :</strong> YKonnect · <strong>Relecture :</strong> à définir<br />
+        <strong>ID BDD :</strong> 1 (exemple)<br />
+        <strong>Mots-clés :</strong> VLAN, 802.1Q, segmentation, switch
+      </p>
+
+      <hr style="border:none; border-top:1px solid var(--border-subtle); margin:12px 0;" />
+
+      <h3 class="section-title">Poser une question au bot</h3>
+      <p class="text-soft" style="margin-bottom:8px;">
+        Le chatbot pourra être appelé en lui fournissant l’ID de l’article actuel, pour contextualiser la réponse.
+      </p>
+      <button class="btn btn-primary" onclick="window.location='index.html#chat'">
+        Interroger le chatbot sur ce sujet
+      </button>
+
+      <hr style="border:none; border-top:1px solid var(--border-subtle); margin:12px 0;" />
+
+      <h3 class="section-title">Articles liés</h3>
+      <ul class="text-soft" style="margin-left:18px;">
+        <li><a href="article.html?id=2">Introduction au routage inter-VLAN</a></li>
+        <li><a href="article.html?id=3">Bonnes pratiques de plan d’adressage IPv4</a></li>
+      </ul>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

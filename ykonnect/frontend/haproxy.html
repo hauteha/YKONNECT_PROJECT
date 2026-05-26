@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>HAProxy — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text"><span>YKonnect</span><span>débranche moi si tu peux</span></div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html" class="nav-active">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">💬 Demander au bot</button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › <a href="articles.html">Articles</a> › HAProxy
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <div>
+        <h1 class="page-header-title">Mise en place d'HAProxy comme load balancer</h1>
+        <p class="page-header-subtitle">Déployer un reverse proxy haute disponibilité avec répartition de charge et health checks.</p>
+        <p class="page-header-meta">
+          Catégorie : <span class="chip">Réseau</span> <span class="chip">Cloud</span>
+          · Niveau : <span class="badge">Intermédiaire · 30 min</span>
+          · Mise à jour : 2026-05-01
+        </p>
+      </div>
+      <button class="btn btn-outline-primary" onclick="window.location='articles.html'">← Retour</button>
+    </div>
+  </section>
+
+  <div class="grid" style="grid-template-columns: minmax(0,3fr) minmax(260px,2fr); gap:18px;">
+    <article class="card article-body">
+
+      <h2>Présentation d'HAProxy</h2>
+      <p>HAProxy (High Availability Proxy) est un load balancer et reverse proxy TCP/HTTP de référence dans l'industrie. Il est utilisé par des entreprises comme GitHub, Twitter et Airbnb pour distribuer des milliards de requêtes. Ses points forts :</p>
+      <ul>
+        <li><strong>Répartition de charge</strong> — round-robin, least-conn, source IP hash…</li>
+        <li><strong>Health checks</strong> — détection automatique des backends défaillants</li>
+        <li><strong>Terminaison SSL/TLS</strong> — gestion des certificats en frontal</li>
+        <li><strong>Page de stats</strong> — tableau de bord intégré en temps réel</li>
+        <li><strong>ACL puissantes</strong> — routage conditionnel basé sur host, path, headers</li>
+      </ul>
+
+      <h2>Architecture cible</h2>
+      <div class="code-block">Internet
+    │
+    ▼
+[HAProxy :80/:443]  ← reverse proxy / load balancer
+    ├── backend1 : 192.168.4.10:8080
+    ├── backend2 : 192.168.4.11:8080
+    └── backend3 : 192.168.4.12:8080</div>
+
+      <h2>1. Installation</h2>
+      <div class="code-block">sudo apt update && sudo apt install -y haproxy
+sudo systemctl enable haproxy</div>
+      <p>Vérifier la version :</p>
+      <div class="code-block">haproxy -v</div>
+
+      <h2>2. Structure du fichier de configuration</h2>
+      <p>HAProxy utilise un seul fichier <span class="code-inline">/etc/haproxy/haproxy.cfg</span> avec 4 sections principales :</p>
+      <ul>
+        <li><strong>global</strong> — paramètres process (user, logs, limits)</li>
+        <li><strong>defaults</strong> — valeurs par défaut pour les frontends/backends</li>
+        <li><strong>frontend</strong> — écoute les connexions entrantes</li>
+        <li><strong>backend</strong> — pool de serveurs qui traitent les requêtes</li>
+      </ul>
+
+      <h2>3. Configuration complète (HTTP load balancer)</h2>
+      <div class="code-block">global
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+    maxconn 50000
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    option  forwardfor       # Transmet l'IP réelle du client en X-Forwarded-For
+    option  http-server-close
+    timeout connect 5s
+    timeout client  30s
+    timeout server  30s
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 503 /etc/haproxy/errors/503.http
+
+# ── Frontend : écoute les requêtes entrantes ─────────────────
+frontend http_front
+    bind *:80
+    default_backend webservers
+
+    # Redirection HTTP → HTTPS (si TLS activé)
+    # redirect scheme https if !{ ssl_fc }
+
+# ── Backend : pool de serveurs ────────────────────────────────
+backend webservers
+    balance roundrobin          # Algorithme : round-robin
+    option  httpchk GET /health # Health check sur /health
+    http-check expect status 200
+
+    server web1 192.168.4.10:8080 check inter 5s rise 2 fall 3
+    server web2 192.168.4.11:8080 check inter 5s rise 2 fall 3
+    server web3 192.168.4.12:8080 check inter 5s rise 2 fall 3 backup
+
+# ── Page de statistiques ──────────────────────────────────────
+frontend stats
+    bind *:8404
+    stats enable
+    stats uri /stats
+    stats realm HAProxy\ Statistics
+    stats auth admin:motdepasse_fort
+    stats refresh 10s
+    stats show-legends
+    stats show-node</div>
+
+      <h2>4. Algorithmes de répartition</h2>
+      <ul>
+        <li><span class="code-inline">roundrobin</span> — distribution cyclique (défaut, stateless)</li>
+        <li><span class="code-inline">leastconn</span> — vers le serveur ayant le moins de connexions actives</li>
+        <li><span class="code-inline">source</span> — hash de l'IP source → même client, même serveur (sessions persistantes)</li>
+        <li><span class="code-inline">uri</span> — hash de l'URI (utile pour les caches)</li>
+        <li><span class="code-inline">first</span> — remplit le premier serveur avant d'utiliser le suivant</li>
+      </ul>
+
+      <h2>5. Terminaison TLS (HTTPS)</h2>
+      <p>Concaténer le certificat et la clé dans un seul fichier .pem :</p>
+      <div class="code-block">cat /etc/letsencrypt/live/monsite.fr/fullchain.pem \
+    /etc/letsencrypt/live/monsite.fr/privkey.pem \
+    > /etc/haproxy/certs/monsite.pem
+
+chmod 600 /etc/haproxy/certs/monsite.pem</div>
+      <div class="code-block">frontend https_front
+    bind *:443 ssl crt /etc/haproxy/certs/monsite.pem
+    http-request set-header X-Forwarded-Proto https
+    default_backend webservers</div>
+
+      <h2>6. Routage par nom de domaine (multi-site)</h2>
+      <div class="code-block">frontend http_front
+    bind *:80
+    use_backend app1_backend if { hdr(host) -i app1.mondomaine.fr }
+    use_backend app2_backend if { hdr(host) -i app2.mondomaine.fr }
+    default_backend app1_backend
+
+backend app1_backend
+    server app1 192.168.4.10:8080 check
+
+backend app2_backend
+    server app2 192.168.4.11:8080 check</div>
+
+      <h2>7. Vérification et rechargement</h2>
+      <div class="code-block"># Valider la syntaxe avant de recharger
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+
+# Recharger sans couper les connexions existantes (graceful)
+sudo systemctl reload haproxy
+
+# Vérifier le statut
+sudo systemctl status haproxy
+
+# Voir les logs
+sudo tail -f /var/log/haproxy.log</div>
+
+      <h2>8. Page de statistiques</h2>
+      <p>Accéder à <span class="code-inline">http://&lt;IP&gt;:8404/stats</span> pour voir en temps réel :</p>
+      <ul>
+        <li>État de chaque backend (UP/DOWN)</li>
+        <li>Sessions actives, requêtes/s, taux d'erreurs</li>
+        <li>Poids et état des health checks</li>
+      </ul>
+
+      <div class="tip-box">💡 HAProxy peut être combiné avec <strong>Keepalived</strong> pour une haute disponibilité active/passive avec IP virtuelle (VIP).</div>
+      <div class="tip-box">💡 En production, utiliser <strong>Certbot + Let's Encrypt</strong> pour les certificats TLS avec renouvellement automatique.</div>
+
+    </article>
+
+    <aside>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Métadonnées</h3>
+        <p class="text-soft">
+          <strong>Auteur :</strong> YKonnect<br>
+          <strong>Mots-clés :</strong> HAProxy, load balancer, reverse proxy, TLS, health check<br>
+          <strong>OS :</strong> Debian 12, Ubuntu 22.04+
+        </p>
+        <hr style="border:none; border-top:1px solid var(--border-subtle); margin:12px 0;">
+        <h3 class="section-title">Prérequis</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li>Accès root / sudo</li>
+          <li>2+ serveurs backend accessibles</li>
+          <li>Ports 80/443 disponibles</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-bottom:14px;">
+        <h3 class="section-title">Demander au chatbot</h3>
+        <p class="text-soft" style="margin-bottom:8px;">Questions sur HAProxy ou les load balancers ?</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.location='index.html#chat'">💬 Ouvrir le chatbot</button>
+      </div>
+      <div class="card">
+        <h3 class="section-title">Articles liés</h3>
+        <ul class="text-soft" style="margin-left:16px;">
+          <li><a href="wireguard.html" style="color:var(--accent)">VPN WireGuard</a></li>
+          <li><a href="fail2ban.html" style="color:var(--accent)">Protection Fail2Ban</a></li>
+          <li><a href="article.html?id=4">Docker & bonnes pratiques</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

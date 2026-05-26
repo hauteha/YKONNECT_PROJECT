@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Contact — YKonnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/styles.css">
+
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">Y</div>
+      <div class="brand-text">
+        <span>YKonnect</span>
+        <span>débranche moi si tu peux</span>
+      </div>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="articles.html">Articles</a>
+      <a href="themes.html">Thématiques</a>
+      <a href="certifications.html">Certifications</a>
+      <a href="about.html">À propos</a>
+      <a href="contact.html" class="nav-active">Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="window.location='index.html#chat'">
+        💬 Poser une question
+      </button>
+    </div>
+  </header>
+
+  <section class="page-header">
+    <div class="breadcrumb">
+      <a href="index.html">Accueil</a> › Contact
+    </div>
+    <h1 class="page-header-title">Contact</h1>
+    <p class="page-header-subtitle">
+      Une suggestion d’article, une remarque sur la plateforme, une idée d’évolution ?
+      Utilisez ce formulaire ou passez directement par le chatbot.
+    </p>
+  </section>
+
+  <section class="card">
+    <form class="grid" style="gap:12px;" onsubmit="event.preventDefault(); alert('[Prototype] Envoi simulé.');">
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label" for="name">Nom / Pseudo</label>
+          <input class="input" id="name" placeholder="Admin infra, étudiant AIS, etc." />
+        </div>
+        <div class="field">
+          <label class="label" for="email">Adresse e-mail</label>
+          <input class="input" id="email" type="email" placeholder="vous@exemple.com" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="topic">Sujet</label>
+        <select id="topic">
+          <option value="suggestion">Suggestion d’article</option>
+          <option value="bug">Bug / problème technique</option>
+          <option value="collab">Collaboration / contribution</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="message">Message</label>
+        <textarea class="textarea" id="message" placeholder="Expliquez brièvement votre demande..."></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:6px;">
+        <button class="btn btn-ghost" type="reset">Vider</button>
+        <button class="btn btn-primary" type="submit">Envoyer</button>
+      </div>
+    </form>
+  </section>
+</div>
+</body>
+</html>
